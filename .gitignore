@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+data/flickr_logos_27_dataset/
+data/flickr_logos_27_dataset.tar.gz
+core*
+yolo*
+epoch*
+args.yaml
+runs/
