@@ -110,7 +110,7 @@ def analyze_video_stream(url):
                 current_sec = int(frame_count / fps)
                 
                 # Inference
-                results = model.predict(frame, conf=0.25, device='cpu', verbose=False)
+                results = model.predict(frame, conf=0.6, device='cpu', verbose=False)
                 
                 # Visuals
                 annotated = results[0].plot()
