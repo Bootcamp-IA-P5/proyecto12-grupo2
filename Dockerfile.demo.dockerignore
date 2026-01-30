@@ -1,0 +1,23 @@
+# 1. Ignore everything
+**
+!requirements.txt
+
+# 2. Handle 'src'
+!src/
+# Ignore everything inside src EXCEPT the demo folder
+src/*
+!src/demo/
+
+# 3. Handle 'models'
+!models/
+# Ignore everything inside models EXCEPT models_org
+models/*
+!models/models_org/
+
+# Ignore everything inside models_org EXCEPT weights
+models/models_org/*
+!models/models_org/weights/
+
+# Ignore everything inside weights EXCEPT best.pt
+models/models_org/weights/*
+!models/models_org/weights/best.pt

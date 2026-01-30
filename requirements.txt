@@ -1,0 +1,11 @@
+# requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+python-dotenv
+streamlit
+ultralytics
+psycopg2-binary
+opencv-python
+onnxruntime  # High-performance CPU inference
+# libgl1  # Required for OpenCV graphics support
+yt-dlp
