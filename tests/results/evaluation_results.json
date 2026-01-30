@@ -1,0 +1,70 @@
+{
+  "model_path": "models/models_org/weights/best.pt",
+  "evaluation_date": "2026-01-30T13:06:47.330044",
+  "test_images": [
+    {
+      "image_path": "tests/test_images/shopping_brands.jpg",
+      "detections": []
+    },
+    {
+      "image_path": "tests/test_images/coca_cola.jpg",
+      "detections": [
+        {
+          "brand": "Cocacola",
+          "confidence": 0.7707999348640442,
+          "bbox": [
+            85.4588851928711,
+            418.7071228027344,
+            312.5261535644531,
+            504.4377136230469
+          ]
+        }
+      ]
+    },
+    {
+      "image_path": "tests/test_images/mcdonalds.jpg",
+      "detections": []
+    },
+    {
+      "image_path": "tests/test_images/apple_products.jpg",
+      "detections": []
+    },
+    {
+      "image_path": "tests/test_images/nike_shoes.jpg",
+      "detections": []
+    },
+    {
+      "image_path": "tests/test_images/sports_logos.jpg",
+      "detections": []
+    },
+    {
+      "image_path": "tests/test_images/starbucks.jpg",
+      "detections": []
+    },
+    {
+      "image_path": "tests/test_images/adidas_store.jpg",
+      "detections": [
+        {
+          "brand": "Nike",
+          "confidence": 0.36697816848754883,
+          "bbox": [
+            343.0986022949219,
+            242.03323364257812,
+            687.5125732421875,
+            452.3805236816406
+          ]
+        }
+      ]
+    }
+  ],
+  "test_videos": [],
+  "summary": {
+    "total_images_tested": 8,
+    "total_videos_tested": 0,
+    "brands_detected": [
+      "Cocacola",
+      "Nike"
+    ],
+    "average_confidence": 0.5688890516757965
+  }
+}
