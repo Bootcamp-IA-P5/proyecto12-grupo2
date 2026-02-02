@@ -11,8 +11,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install Python dependencies
-# The extra index URL for torch is read directly from requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 
 # Copy the application source code and models into the container
 COPY src/ ./src/
