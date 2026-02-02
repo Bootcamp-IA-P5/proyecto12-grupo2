@@ -1,6 +1,11 @@
 # requirements.txt
 --extra-index-url https://download.pytorch.org/whl/cpu
 
+colorlog
+fastapi
+uvicorn[standard] 
+python-multipart
+sqlalchemy
 python-dotenv
 streamlit
 ultralytics
