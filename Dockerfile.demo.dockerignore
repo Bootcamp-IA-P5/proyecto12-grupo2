@@ -10,9 +10,10 @@ src/*
 
 # 3. Handle 'models'
 !models/
-# Ignore everything inside models EXCEPT models_org
+# Ignore everything inside models EXCEPT models_org and models_org_2
 models/*
 !models/models_org/
+!models/models_org_2/
 
 # Ignore everything inside models_org EXCEPT weights
 models/models_org/*
@@ -21,3 +22,11 @@ models/models_org/*
 # Ignore everything inside weights EXCEPT best.pt
 models/models_org/weights/*
 !models/models_org/weights/best.pt
+
+# Ignore everything inside models_org_2 EXCEPT weights
+models/models_org_2/*
+!models/models_org_2/weights/
+
+# Ignore everything inside weights EXCEPT best.pt
+models/models_org_2/weights/*
+!models/models_org_2/weights/best.pt
