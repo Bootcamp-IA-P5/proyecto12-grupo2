@@ -212,3 +212,4 @@ yolo*
 epoch*
 args.yaml
 runs/
+src/data/

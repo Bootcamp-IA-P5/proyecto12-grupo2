@@ -86,6 +86,14 @@ class BrandAppUI(Logger):
         # Keep results cached in session state so the user can inspect them
         if 'results' not in st.session_state:
             st.session_state.results = None
+        
+        # Initialize duplicate detection state
+        if 'duplicate_detected' not in st.session_state:
+            st.session_state.duplicate_detected = False
+        if 'existing_video_id' not in st.session_state:
+            st.session_state.existing_video_id = None
+        if 'duplicate_title' not in st.session_state:
+            st.session_state.duplicate_title = None
 
         # --- Sidebar: Model Info ---
         # This section calls the backend to retrieve model metadata (brands)
@@ -109,6 +117,60 @@ class BrandAppUI(Logger):
         # --- YouTube URL tab ---
         with tab1:
             st.subheader("Analyze YouTube Video")
+            
+            # Check if we're handling a duplicate from a previous session
+            if st.session_state.duplicate_detected and st.session_state.duplicate_title:
+                st.warning(f"⚠️ Video '{st.session_state.duplicate_title}' already exists in database")
+                
+                # Create action buttons for duplicate handling
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if st.button("📋 View Existing Analysis", key=f"view_existing_yt_session_{st.session_state.existing_video_id}"):
+                        # Fetch and display existing analysis
+                        try:
+                            existing_response = requests.get(f"{self.url}/results/{st.session_state.existing_video_id}")
+                            if existing_response.status_code == 200:
+                                st.session_state.results = existing_response.json()
+                                st.session_state.duplicate_detected = False
+                                st.session_state.existing_video_id = None
+                                st.session_state.duplicate_title = None
+                                st.rerun()
+                            else:
+                                st.error("Could not retrieve existing analysis")
+                        except Exception as e:
+                            st.error(f"Error fetching existing analysis: {e}")
+                
+                with col2:
+                    if st.button("🗑️ Delete Existing & Re-analyze", key=f"delete_existing_yt_session_{st.session_state.existing_video_id}"):
+                        # Delete existing analysis and continue with new analysis
+                        try:
+                            delete_response = requests.delete(f"{self.url}/results/{st.session_state.existing_video_id}")
+                            if delete_response.status_code == 200:
+                                st.success("Existing analysis deleted. Starting new analysis...")
+                                # Clear duplicate state and start analysis
+                                st.session_state.duplicate_detected = False
+                                st.session_state.existing_video_id = None
+                                st.session_state.duplicate_title = None
+                                st.session_state.analysis_started = True
+                                st.rerun()
+                            else:
+                                st.error("Could not delete existing analysis")
+                        except Exception as e:
+                            st.error(f"Error deleting existing analysis: {e}")
+                
+                with col3:
+                    if st.button("❌ Cancel", key=f"cancel_yt_session"):
+                        st.info("Analysis cancelled. No changes made.")
+                        st.session_state.duplicate_detected = False
+                        st.session_state.existing_video_id = None
+                        st.session_state.duplicate_title = None
+                        st.session_state.analysis_started = False
+                        st.rerun()
+                
+                # Don't show the analysis interface when handling duplicates
+                return
+
             url = st.text_input("YouTube URL:", placeholder="Paste link here...")
 
             if st.button("🚀 Start Audit (YouTube)", type="primary", key="audit_yt"):
@@ -136,7 +198,24 @@ class BrandAppUI(Logger):
                                     continue
                                 data = json.loads(line)
 
-                                if data.get("type") == "progress":
+                                if data.get("type") == "duplicate":
+                                    # Handle duplicate video detection
+                                    self.log.debug("Duplicate video detected in stream")
+                                    existing_video_id = data.get("existing_video_id")
+                                    title = data.get("title", "Unknown")
+                                    message = data.get("message", "Video already exists")
+                                    
+                                    # Store duplicate state in session and trigger rerun to show duplicate interface
+                                    st.session_state.duplicate_detected = True
+                                    st.session_state.existing_video_id = existing_video_id
+                                    st.session_state.duplicate_title = title
+                                    
+                                    # Show warning and break to display duplicate interface
+                                    st.warning(f"⚠️ {message}")
+                                    st.info("Please choose an action below:")
+                                    st.rerun()
+
+                                elif data.get("type") == "progress":
                                     progress = data.get("progress", 0)
                                     progress_bar.progress(min(progress, 1.0))
 
@@ -163,6 +242,60 @@ class BrandAppUI(Logger):
         # --- Upload tab ---
         with tab2:
             st.subheader("Analyze Uploaded Video")
+            
+            # Check if we're handling a duplicate from a previous session
+            if st.session_state.duplicate_detected and st.session_state.duplicate_title:
+                st.warning(f"⚠️ Video '{st.session_state.duplicate_title}' already exists in database")
+                
+                # Create action buttons for duplicate handling
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if st.button("📋 View Existing Analysis", key=f"view_existing_upload_session_{st.session_state.existing_video_id}"):
+                        # Fetch and display existing analysis
+                        try:
+                            existing_response = requests.get(f"{self.url}/results/{st.session_state.existing_video_id}")
+                            if existing_response.status_code == 200:
+                                st.session_state.results = existing_response.json()
+                                st.session_state.duplicate_detected = False
+                                st.session_state.existing_video_id = None
+                                st.session_state.duplicate_title = None
+                                st.rerun()
+                            else:
+                                st.error("Could not retrieve existing analysis")
+                        except Exception as e:
+                            st.error(f"Error fetching existing analysis: {e}")
+                
+                with col2:
+                    if st.button("🗑️ Delete Existing & Re-analyze", key=f"delete_existing_upload_session_{st.session_state.existing_video_id}"):
+                        # Delete existing analysis and continue with new analysis
+                        try:
+                            delete_response = requests.delete(f"{self.url}/results/{st.session_state.existing_video_id}")
+                            if delete_response.status_code == 200:
+                                st.success("Existing analysis deleted. Starting new analysis...")
+                                # Clear duplicate state and start analysis
+                                st.session_state.duplicate_detected = False
+                                st.session_state.existing_video_id = None
+                                st.session_state.duplicate_title = None
+                                st.session_state.analysis_started = True
+                                st.rerun()
+                            else:
+                                st.error("Could not delete existing analysis")
+                        except Exception as e:
+                            st.error(f"Error deleting existing analysis: {e}")
+                
+                with col3:
+                    if st.button("❌ Cancel", key=f"cancel_upload_session"):
+                        st.info("Analysis cancelled. No changes made.")
+                        st.session_state.duplicate_detected = False
+                        st.session_state.existing_video_id = None
+                        st.session_state.duplicate_title = None
+                        st.session_state.analysis_started = False
+                        st.rerun()
+                
+                # Don't show the analysis interface when handling duplicates
+                return
+
             uploaded_file = st.file_uploader("Upload Video", type=['mp4', 'avi', 'mov', 'mkv'])
 
             if st.button("🚀 Start Audit (Upload)", type="primary", key="audit_upload"):
@@ -189,7 +322,24 @@ class BrandAppUI(Logger):
                                     continue
                                 data = json.loads(line)
 
-                                if data.get("type") == "progress":
+                                if data.get("type") == "duplicate":
+                                    # Handle duplicate video detection
+                                    self.log.debug("Duplicate video detected in stream")
+                                    existing_video_id = data.get("existing_video_id")
+                                    title = data.get("title", "Unknown")
+                                    message = data.get("message", "Video already exists")
+                                    
+                                    # Store duplicate state in session and trigger rerun to show duplicate interface
+                                    st.session_state.duplicate_detected = True
+                                    st.session_state.existing_video_id = existing_video_id
+                                    st.session_state.duplicate_title = title
+                                    
+                                    # Show warning and break to display duplicate interface
+                                    st.warning(f"⚠️ {message}")
+                                    st.info("Please choose an action below:")
+                                    st.rerun()
+
+                                elif data.get("type") == "progress":
                                     progress = data.get("progress", 0)
                                     progress_bar.progress(min(progress, 1.0))
 

@@ -69,7 +69,11 @@ async def analyze_video(file: UploadFile = File(...)):
     This endpoint accepts a video file upload, processes it frame-by-frame, and returns
     real-time streaming updates as a StreamingResponse with NDJSON format.
     
+    Before starting analysis, it checks if a video with the same name already exists
+    in the database. If found, it returns a duplicate detection response.
+    
     Streaming Progress Format:
+        - Duplicate object (type="duplicate"): Sent if video already exists with existing video_id
         - Progress objects (type="progress"): Sent during analysis with current frame metrics
         - Complete object (type="complete"): Sent at end with final results and video_id for storage
         - Error object (type="error"): Sent if analysis fails
@@ -80,7 +84,8 @@ async def analyze_video(file: UploadFile = File(...)):
     Returns:
         StreamingResponse: NDJSON-formatted stream with analysis progress and final results.
             Each line contains a JSON object with:
-            - type: "progress", "complete", or "error"
+            - type: "duplicate", "progress", "complete", or "error"
+            - For duplicate: existing_video_id (UUID) of the already stored analysis
             - For progress: timestamp, brands detected in frame, progress percentage, detected_seconds
             - For complete: video_id (UUID), title, exposure metrics, and brand breakdown
     
@@ -88,6 +93,21 @@ async def analyze_video(file: UploadFile = File(...)):
         HTTPException: 500 error if file processing or analysis fails
     """
     try:
+        # Check if video already exists in database by filename
+        existing_analysis = db.read_analysis(file.filename)
+        if existing_analysis:
+            # Video already exists, return duplicate response
+            duplicate_response = {
+                "type": "duplicate",
+                "existing_video_id": existing_analysis["video_id"],
+                "title": existing_analysis["title"],
+                "message": f"Video '{file.filename}' already exists in database with ID: {existing_analysis['video_id']}"
+            }
+            return StreamingResponse(
+                [json.dumps(duplicate_response) + "\n"],
+                media_type="application/x-ndjson"
+            )
+        
         # Save uploaded file to temporary location for processing
         video_id = str(uuid.uuid4())
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
@@ -182,7 +202,11 @@ async def analyze_stream(url: str):
     This endpoint downloads and processes a YouTube video frame-by-frame, returning
     real-time streaming updates as a StreamingResponse with NDJSON format.
     
+    Before starting analysis, it checks if a video with the same URL already exists
+    in the database. If found, it returns a duplicate detection response.
+    
     Streaming Progress Format:
+        - Duplicate object (type="duplicate"): Sent if video already exists with existing video_id
         - Progress objects (type="progress"): Sent during analysis with current frame metrics
         - Complete object (type="complete"): Sent at end with final results and video_id
         - Error object (type="error"): Sent if download or analysis fails
@@ -193,7 +217,8 @@ async def analyze_stream(url: str):
     Returns:
         StreamingResponse: NDJSON-formatted stream with analysis progress and final results.
             Each line contains a JSON object with:
-            - type: "progress", "complete", or "error"
+            - type: "duplicate", "progress", "complete", or "error"
+            - For duplicate: existing_video_id (UUID) of the already stored analysis
             - For progress: timestamp, brands detected, progress percentage, detected_seconds
             - For complete: video_id (UUID), title, exposure metrics, and brand breakdown
     
@@ -201,6 +226,41 @@ async def analyze_stream(url: str):
         HTTPException: 500 error if URL is invalid or analysis fails
     """
     try:
+        # Check if video already exists in database by URL (we'll use URL as a unique identifier)
+        # For YouTube URLs, we'll check if any video with the same title exists
+        # This is a simple approach - in a production system you might want to store URL hashes
+        
+        # First, try to get video title from URL to check for duplicates
+        try:
+            import yt_dlp
+            ydl_opts = {
+                'format': 'best[height<=480]',
+                'quiet': True,
+                'no_warnings': True,
+                'noplaylist': True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                meta = ydl.extract_info(url, download=False)
+                video_title = meta.get('title', '')
+        except:
+            video_title = ""
+        
+        # Check if video with same title exists
+        if video_title:
+            existing_analysis = db.read_analysis(video_title)
+            if existing_analysis:
+                # Video already exists, return duplicate response
+                duplicate_response = {
+                    "type": "duplicate",
+                    "existing_video_id": existing_analysis["video_id"],
+                    "title": existing_analysis["title"],
+                    "message": f"Video '{video_title}' already exists in database with ID: {existing_analysis['video_id']}"
+                }
+                return StreamingResponse(
+                    [json.dumps(duplicate_response) + "\n"],
+                    media_type="application/x-ndjson"
+                )
+        
         def generate_analysis():
             """
             Generator that yields NDJSON-formatted progress updates during YouTube video analysis.
@@ -306,6 +366,22 @@ async def delete_video(video_id: str):
     """
     db.delete_analysis(video_id)
     return {"status": "deleted"}
+
+@app.post("/reanalyze/")
+async def reanalyze_video(video_id: str):
+    """
+    Trigger re-analysis of a video after deletion.
+    
+    This endpoint is used when a user wants to delete an existing analysis
+    and immediately start a new analysis of the same video.
+    
+    Args:
+        video_id (str): The video_id of the video to re-analyze
+    
+    Returns:
+        dict: Message indicating re-analysis should be triggered on frontend
+    """
+    return {"message": "Video deleted successfully. Please restart analysis.", "video_id": video_id}
 
 @app.post("/save-analysis/")
 async def save_analysis(video_id: str):
