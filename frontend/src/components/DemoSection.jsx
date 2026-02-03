@@ -11,7 +11,7 @@ export default function DemoSection() {
     const streamRef = useRef(null)
 
     // Usar variable de entorno de Vite
-    const API_URL = 'http://localhost:8000'
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
     const handleImageUpload = (e) => {
         const file = e.target.files?.[0]
