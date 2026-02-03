@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-import os
+
 
 # Agregar el directorio de proyecto al path
 sys.path.insert(0, '/workspaces/proyecto12-grupo2')
