@@ -7,8 +7,8 @@ ultralytics
 psycopg2-binary
 opencv-python
 onnxruntime  # High-performance CPU inference
-# libgl1  # Required for OpenCV graphics support
-yt-dlp
+libgl1  # Required for OpenCV graphics support
+#yt-dlp
 fastapi
 uvicorn
 python-multipart
