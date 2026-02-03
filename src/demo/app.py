@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import yt_dlp
-from .database import save_report
-from .settings import YOLO_MODEL_ORG
+from database import save_report
+from settings import YOLO_MODEL_ORG
 import time
 
 # --- Page Setup ---
