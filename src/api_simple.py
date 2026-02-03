@@ -1,16 +1,17 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+import os
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import sys
-sys.path.insert(0, '/workspaces/proyecto12-grupo2')
 
-print("🔧 Cargando FastAPI...")
 app = FastAPI(title="KUMO VISION API", version="1.0.0")
 
-print("⚙️  Configurando CORS...")
+# Lee los orígenes desde una variable de entorno, 
+# si no existe, por defecto solo permite localhost por seguridad.
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+origins = allowed_origins_env.split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,12 +22,17 @@ try:
     from ultralytics import YOLO
     import os
     from pathlib import Path
+    
+# 1. Detecta la ubicación del archivo actual y sube niveles hasta la raíz
+# .resolve() obtiene la ruta absoluta completa
+# .parent es la carpeta 'src', y el segundo .parent es la raíz 'proyecto12-grupo2'
 
-    BASE_DIR = Path('/workspaces/proyecto12-grupo2')
-    MODEL_PATH = os.path.join(BASE_DIR, 'models/models_org/weights/best.pt')
+    BASE_DIR = Path(__file__).resolve().parent.parent
+# 2. Construye la ruta del modelo usando el operador / de pathlib (más limpio que os.path.join)
+    MODEL_PATH = BASE_DIR / "models" / "models_org" / "weights" / "best.pt"
 
-    print(f"   Ruta: {MODEL_PATH}")
-    print(f"   Existe: {os.path.exists(MODEL_PATH)}")
+    print(f"🚀 Ruta base detectada: {BASE_DIR}")
+    print(f"📍 Buscando modelo en: {MODEL_PATH}")
 
     if os.path.exists(MODEL_PATH):
         model = YOLO(MODEL_PATH)
