@@ -16,6 +16,7 @@ def get_connection():
 def save_report(video_name, brand, seconds, total_duration, percentage):
     conn = get_connection()
     cur = conn.cursor()
+    conn.close()
     query = """
     INSERT INTO logo_detections (video_name, brand_name, appearance_seconds, video_duration_seconds, appearance_percentage)
     VALUES (%s, %s, %s, %s, %s)
