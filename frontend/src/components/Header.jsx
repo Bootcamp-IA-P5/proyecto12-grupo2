@@ -1,5 +1,3 @@
-import React from 'react'
-
 export default function Header() {
     return (
         <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-cyan-500/30 sticky top-0 z-50 glow-sm">
