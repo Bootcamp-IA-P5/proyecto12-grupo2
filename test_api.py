@@ -3,13 +3,18 @@
 from fastapi.testclient import TestClient
 from src.api import app
 import sys
-import json
 from io import BytesIO
 from PIL import Image
-import numpy as np
 
-# Importar directamente
-sys.path.insert(0, '/workspaces/proyecto12-grupo2')
+# Detecta la carpeta donde está este archivo
+# Si test_api.py está en la raíz, usamos .parent
+# Si está dentro de una carpeta /tests, usaríamos .parent.parent
+ROOT_DIR = Path(__file__).resolve().parent
+
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+print(f"✅ Proyecto añadido al path: {ROOT_DIR}")
 
 # Crear una imagen de prueba
 print("Creando imagen de prueba...")
