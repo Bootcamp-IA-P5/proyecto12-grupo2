@@ -20,10 +20,29 @@ class BrandAppUI(Logger):
         self._init_session_state()
 
     def _init_session_state(self):
-        if 'results' not in st.session_state:
-            st.session_state.results = None
+        # Initialize session state variables for results
+        if 'youtube_results' not in st.session_state:
+            st.session_state.youtube_results = None
+        if 'upload_results' not in st.session_state:
+            st.session_state.upload_results = None
+        if 'previous_results' not in st.session_state:
+            st.session_state.previous_results = None
+
+        # Duplicate info is stored separately to trigger the dialog when needed
         if 'duplicate_info' not in st.session_state:
             st.session_state.duplicate_info = None
+        if 'duplicate_info' not in st.session_state:
+            st.session_state.duplicate_info = None
+
+        # Track which tab is currently active to manage results display context
+        if 'current_tab' not in st.session_state:
+            st.session_state.current_tab = 'youtube'
+        if 'youtube_results' not in st.session_state:
+            st.session_state.youtube_results = None
+        if 'upload_results' not in st.session_state:
+            st.session_state.upload_results = None
+        if 'previous_results' not in st.session_state:
+            st.session_state.previous_results = None
 
     def _process_raw_detections(self, res_data):
         """
@@ -92,7 +111,7 @@ class BrandAppUI(Logger):
             st.session_state.duplicate_info = None
             st.rerun()
 
-    def _process_analysis_stream(self, response):
+    def _process_analysis_stream(self, response, tab_type):
         status_msg = st.empty()
         progress_bar = st.progress(0)
         
@@ -110,8 +129,21 @@ class BrandAppUI(Logger):
                 progress_bar.progress(min(data.get("progress", 0.0), 1.0))
                 status_msg.write(f"Processing... {data.get('timestamp')}s")
             elif data.get("type") == "complete":
-                # Process the result before saving
-                st.session_state.results = self._process_raw_detections(data.get("result"))
+                results = self._process_raw_detections(data.get("result"))
+
+                if tab_type == 'youtube':
+                    st.session_state.youtube_results = results
+                    st.session_state.upload_results = None
+                    st.session_state.previous_results = None
+                elif tab_type == 'upload':
+                    st.session_state.upload_results = results
+                    st.session_state.youtube_results = None
+                    st.session_state.previous_results = None
+                elif tab_type == 'previous':
+                    st.session_state.previous_results = results
+                    st.session_state.youtube_results = None
+                    st.session_state.upload_results = None
+
                 st.rerun()
 
     def run(self):
@@ -121,23 +153,35 @@ class BrandAppUI(Logger):
             self.handle_duplicate_dialog(st.session_state.duplicate_info)
 
         st.title("🛡️ BrandTracker AI")
-        
-        # Add a new tab for viewing previous analyses
+
+        # Set current tab based on which tab is active
         tab1, tab2, tab3 = st.tabs(["YouTube", "Upload", "Previous Analyses"])
+        
         with tab1:
+            st.session_state.current_tab = 'youtube'
             url = st.text_input("YouTube URL")
+
             if st.button("Analyze Link"):
                 res = requests.post(f"{self.url}/analyze-stream/", params={"url": url}, stream=True)
-                self._process_analysis_stream(res)
+                self._process_analysis_stream(res, 'youtube')
+
+            if st.session_state.youtube_results:
+                self.render_results(st.session_state.youtube_results)
         
         with tab2:
+            st.session_state.current_tab = 'upload'
             file = st.file_uploader("Video File")
+
             if st.button("Analyze Upload"):
                 res = requests.post(f"{self.url}/analyze/", files={"file": file}, stream=True)
-                self._process_analysis_stream(res)
+                self._process_analysis_stream(res, 'upload')
+
+            if st.session_state.upload_results:
+                self.render_results(st.session_state.upload_results)
 
         with tab3:
             # Display previous analyses
+            st.session_state.current_tab = 'previous'
             st.subheader("Select a previous analysis to view:")
             video_list = self.get_previous_analyses()
             if video_list:
@@ -152,8 +196,8 @@ class BrandAppUI(Logger):
             else:
                 st.info("No previous analyses found.")
 
-            if st.session_state.results:
-                self.render_results(st.session_state.results)
+            if st.session_state.previous_results:
+                self.render_results(st.session_state.previous_results)
 
     def render_results(self, res):
         st.divider()
@@ -187,7 +231,9 @@ class BrandAppUI(Logger):
             st.json(res)
             
         if st.button("Start New Analysis"):
-            st.session_state.results = None
+            st.session_state.youtube_results = None
+            st.session_state.upload_results = None
+            st.session_state.previous_results = None
             st.rerun()
 
     def get_previous_analyses(self):
@@ -208,6 +254,9 @@ class BrandAppUI(Logger):
             res = requests.get(f"{self.url}/results/{video_id}")
             if res.status_code == 200:
                 st.session_state.results = self._process_raw_detections(res.json())
+                st.session_state.youtube_results = None
+                st.session_state.upload_results = None
+                st.session_state.previous_results = st.session_state.results
                 st.rerun()
         except Exception as e:
             st.error(f"Error fetching analysis: {e}")

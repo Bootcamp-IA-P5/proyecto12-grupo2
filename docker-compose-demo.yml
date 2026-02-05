@@ -11,6 +11,9 @@ services:
     environment:
       # Backend runs on port 8000
       BACKEND_URL: http://backend:8000
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/data:/shared/data
     ports:
       - "8000:8000"
     networks:
@@ -29,6 +32,9 @@ services:
     environment:
       # Frontend communicates with backend via container network
       BACKEND_URL: http://backend:8000
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/data:/shared/data
     ports:
       - "8501:8501"
     depends_on:
