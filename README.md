@@ -143,10 +143,30 @@ cd frontend && npm run lint
 - [ ] Testing integral
 - [ ] Documentación API (Swagger/OpenAPI)
 
+
+## 📸 Galería de Aumento de Datos (Data Augmentation)
+
+Para mejorar la robustez de nuestro modelo **KUMO VISION**, hemos implementado un pipeline de procesamiento de imágenes. Un modelo de IA es tan bueno como los datos con los que se entrena; por ello, mediante estas técnicas, ayudamos a que la red neuronal generalice mejor ante situaciones del mundo real.
+
+A continuación, se presentan los resultados de las transformaciones aplicadas a nuestro dataset:
+
+| Imagen Original | Volteo (Flip) | Ajuste de Color (Jitter) | Recorte Aleatorio (Crop) |
+| :---: | :---: | :---: | :---: |
+| ![Original](data/test_samples/test_image.jfif) | ![Flip](data/augmented_results/sample_flip.jpg) | ![Jitter](data/augmented_results/sample_jitter.jpg) | ![Crop](data/augmented_results/sample_crop.jpg) |
+
+### 🛠️ ¿Por qué usamos estas técnicas?
+1. **Volteo Horizontal:** Permite que el modelo reconozca los objetos sin importar su orientación lateral.
+2. **Ajuste de Color (Jitter):** Simula diferentes condiciones de iluminación y sensores de cámara, haciendo que la detección sea fiable tanto en días soleados como en interiores oscuros.
+3. **Recorte Aleatorio (Crop):** Ayuda al modelo a enfocarse en las características del objeto incluso si este no aparece centrado o se encuentra a diferentes distancias.
+
+> *Nota: Estas transformaciones se generan dinámicamente para enriquecer el entrenamiento sin necesidad de capturar manualmente miles de fotos nuevas.*
+
 ## 📂 Ramas
 
 - `development` - Rama principal de desarrollo
-- `feature-initial-react-frontend` - Setup frontend React (actual)
+- `feature-initial-react-frontend` - Setup frontend React 
+- `feat-data-techniques-for-model-robustization` 
+
 
 ## 📄 Licencia
 
