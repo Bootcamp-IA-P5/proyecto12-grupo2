@@ -31,6 +31,8 @@ Dependencies:
 
 import sys
 from pathlib import Path
+import os
+import uuid
 
 # Add parent directory to Python path to enable imports from sibling packages
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -55,8 +57,12 @@ class BrandInspector(Logger):
     using generator functions that yield frame-by-frame results, enabling real-time
     progress updates in the frontend.
     
+    The system also extracts and saves bounding box images of detected logos for
+    storage in the database.
+    
     Attributes:
         model (YOLO): Ultralytics YOLO model instance loaded from checkpoint
+        crop_dir (Path): Directory to save extracted bounding box images
     """
     
     def __init__(self, model_path=YOLO_MODEL_ORG):
@@ -68,8 +74,13 @@ class BrandInspector(Logger):
         """
         self.log.debug(f"Loading YOLO model from: {model_path}")
         self.model = YOLO(model_path)
+        
+        # Create directory for storing bounding box images
+        self.crop_dir = Path(__file__).parent.parent.parent / "data" / "bounding_boxes"
+        self.crop_dir.mkdir(parents=True, exist_ok=True)
+        self.log.debug(f"Bounding box images will be saved to: {self.crop_dir}")
 
-    def analyze_local_video_stream(self, video_path, conf=0.25):
+    def analyze_local_video_stream(self, video_path, conf=0.50):
         """
         Analyze a local video file frame-by-frame and yield brand detection results.
         
@@ -145,14 +156,26 @@ class BrandInspector(Logger):
                             brand_name = self.model.names[cls_id]  # Convert ID to brand name
                             confidence = float(box.conf[0])  # Detection confidence score
                             
-                            # Store confidence scores for this brand in this frame
+                            # Extract bounding box coordinates
+                            x1, y1, x2, y2 = box.xyxy[0].tolist()
+                            
+                            # Extract and save bounding box image
+                            crop_path = self._save_bounding_box_image(
+                                frame, x1, y1, x2, y2, brand_name, current_sec, frame_count
+                            )
+                            
+                            # Store confidence scores and crop path for this brand in this frame
                             if brand_name not in brands_this_frame:
                                 brands_this_frame[brand_name] = []
-                            brands_this_frame[brand_name].append(confidence)
+                            brands_this_frame[brand_name].append({
+                                'confidence': confidence,
+                                'crop_path': crop_path,
+                                'bbox': [x1, y1, x2, y2]
+                            })
                         
                         # Update cumulative brand counts (how many times each brand appears)
-                        for br, confidences in brands_this_frame.items():
-                            brand_counts[br] = brand_counts.get(br, 0) + 1
+                        for br, detections in brands_this_frame.items():
+                            brand_counts[br] = brand_counts.get(br, 0) + len(detections)
                     
                     # Calculate progress percentage for frontend progress bar
                     progress = (frame_count / total_frames) if total_frames > 0 else 0
@@ -173,7 +196,7 @@ class BrandInspector(Logger):
         
         self.log.debug(f"Analysis complete: {detected_seconds}s detected, {len(brand_counts)} unique brands")
     
-    def analyze_stream(self, url, conf=0.25):
+    def analyze_stream(self, url, conf=0.50):
         """
         Analyze a video from a YouTube URL frame-by-frame and yield brand detection results.
         
@@ -280,14 +303,26 @@ class BrandInspector(Logger):
                             brand_name = self.model.names[cls_id]  # Convert ID to brand name
                             confidence = float(box.conf[0])  # Detection confidence score
                             
-                            # Store confidence scores for this brand in this frame
+                            # Extract bounding box coordinates
+                            x1, y1, x2, y2 = box.xyxy[0].tolist()
+                            
+                            # Extract and save bounding box image
+                            crop_path = self._save_bounding_box_image(
+                                frame, x1, y1, x2, y2, brand_name, current_sec, frame_count
+                            )
+                            
+                            # Store confidence scores and crop path for this brand in this frame
                             if brand_name not in brands_this_frame:
                                 brands_this_frame[brand_name] = []
-                            brands_this_frame[brand_name].append(confidence)
+                            brands_this_frame[brand_name].append({
+                                'confidence': confidence,
+                                'crop_path': crop_path,
+                                'bbox': [x1, y1, x2, y2]
+                            })
                         
                         # Update cumulative brand counts (how many times each brand appears)
-                        for br, confidences in brands_this_frame.items():
-                            brand_counts[br] = brand_counts.get(br, 0) + 1
+                        for br, detections in brands_this_frame.items():
+                            brand_counts[br] = brand_counts.get(br, 0) + len(detections)
                     
                     # Calculate progress percentage for frontend progress bar
                     progress = (frame_count / total_frames) if total_frames > 0 else 0
@@ -308,6 +343,52 @@ class BrandInspector(Logger):
             cap.release()
         
         self.log.debug(f"Stream analysis complete: {detected_seconds}s detected")
+    
+    def _save_bounding_box_image(self, frame, x1, y1, x2, y2, brand_name, timestamp, frame_count):
+        """
+        Extract and save a bounding box image from a frame.
+        
+        Args:
+            frame (numpy.ndarray): The original video frame
+            x1, y1, x2, y2 (float): Bounding box coordinates
+            brand_name (str): Name of the detected brand
+            timestamp (int): Current timestamp in seconds
+            frame_count (int): Current frame number
+        
+        Returns:
+            str: Path to the saved bounding box image, or None if extraction failed
+        """
+        try:
+            # Convert coordinates to integers
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+            
+            # Ensure coordinates are within frame bounds
+            h, w = frame.shape[:2]
+            x1 = max(0, min(x1, w))
+            y1 = max(0, min(y1, h))
+            x2 = max(0, min(x2, w))
+            y2 = max(0, min(y2, h))
+            
+            # Extract the bounding box region
+            crop = frame[y1:y2, x1:x2]
+            
+            # Skip if crop is empty
+            if crop.size == 0:
+                return None
+            
+            # Generate unique filename
+            crop_filename = f"{brand_name}_{timestamp}s_frame{frame_count}_{uuid.uuid4().hex[:8]}.jpg"
+            crop_path = self.crop_dir / crop_filename
+            
+            # Save the cropped image
+            cv2.imwrite(str(crop_path), crop)
+            
+            self.log.debug(f"Saved bounding box image: {crop_path}")
+            return str(crop_path)
+            
+        except Exception as e:
+            self.log.error(f"Error saving bounding box image: {e}")
+            return None
     
     def get_model_info(self):
         """

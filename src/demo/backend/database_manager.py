@@ -173,19 +173,39 @@ class DatabaseManager(Logger):
                     brands_this_frame = frame.get('brands', {})
                     
                     # Store detection for each brand in this frame
-                    for brand_name, confidences in brands_this_frame.items():
-                        # Calculate average confidence if multiple detections of same brand in frame
-                        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
-                        
-                        detection = Detection(
-                            video_id=video.id,  # Foreign key to video
-                            brand_name=brand_name,
-                            confidence=avg_confidence,
-                            timestamp_sec=timestamp,
-                            geometry_box={},  # Could store bbox data if available
-                            exposure_percentage=0.0  # Could calculate if needed
-                        )
-                        session.add(detection)
+                    for brand_name, detections in brands_this_frame.items():
+                        # Handle both old format (list of confidences) and new format (list of dicts)
+                        if detections and isinstance(detections[0], dict):
+                            # New format: list of dicts with confidence, crop_path, bbox
+                            for detection_data in detections:
+                                confidence = detection_data.get('confidence', 0.0)
+                                crop_path = detection_data.get('crop_path', None)
+                                bbox = detection_data.get('bbox', [])
+                                
+                                detection = Detection(
+                                    video_id=video.id,  # Foreign key to video
+                                    brand_name=brand_name,
+                                    confidence=confidence,
+                                    timestamp_sec=timestamp,
+                                    geometry_box=bbox,  # Store bounding box coordinates
+                                    exposure_percentage=0.0,  # Could calculate if needed
+                                    crop_path=crop_path  # Store path to bounding box image
+                                )
+                                session.add(detection)
+                        else:
+                            # Old format: list of confidence scores (backward compatibility)
+                            avg_confidence = sum(detections) / len(detections) if detections else 0.0
+                            
+                            detection = Detection(
+                                video_id=video.id,  # Foreign key to video
+                                brand_name=brand_name,
+                                confidence=avg_confidence,
+                                timestamp_sec=timestamp,
+                                geometry_box={},  # Could store bbox data if available
+                                exposure_percentage=0.0,  # Could calculate if needed
+                                crop_path=None  # No bounding box image for old format
+                            )
+                            session.add(detection)
             
             # Commit all changes (Video and Detection records) as atomic transaction
             session.commit()
@@ -262,6 +282,8 @@ class DatabaseManager(Logger):
                         "brand_name": d.brand_name,
                         "confidence": d.confidence,
                         "timestamp_sec": d.timestamp_sec,
+                        "geometry_box": d.geometry_box,
+                        "crop_path": d.crop_path
                     }
                     for d in detections
                 ]
@@ -333,6 +355,42 @@ class DatabaseManager(Logger):
             # Rollback transaction if any error occurs
             session.rollback()
             self.log.error(f"Error deleting analysis: {e}")
+            raise e
+        finally:
+            self.release_session(session)
+
+    def get_all_videos(self):
+        """
+        Retrieve all stored video analysis records from the database.
+        
+        Returns:
+            list: List of video records with video_id and title for each analysis
+        
+        Raises:
+            Exception: On database errors (logged and re-raised)
+        """
+        session = self.get_session()
+        try:
+            self.log.debug("Retrieving all video analyses")
+            
+            # Query all Video records
+            videos = session.query(Video).all()
+            
+            # Build result list with video_id and title
+            result = [
+                {
+                    "video_id": video.video_uuid,
+                    "title": video.name,
+                    "processed_at": str(video.processed_at)
+                }
+                for video in videos
+            ]
+            
+            self.log.debug(f"Retrieved {len(result)} video analyses")
+            return result
+            
+        except Exception as e:
+            self.log.error(f"Error retrieving all videos: {e}")
             raise e
         finally:
             self.release_session(session)
