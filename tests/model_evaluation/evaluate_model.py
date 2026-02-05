@@ -39,7 +39,7 @@ class ModelEvaluator:
         print(f"\n🖼️  Evaluando: {image_path}")
         
         # Hacer predicción
-        results = self.model(image_path, conf=0.25, save=True, project=save_dir)
+        results = self.model(image_path, conf=0.35, save=True, project=save_dir)
         
         # Analizar resultados
         image_result = {

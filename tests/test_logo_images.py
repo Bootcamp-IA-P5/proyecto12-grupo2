@@ -12,11 +12,16 @@ def test_logos():
     print(f"📦 Cargando modelo: {model_path}\n")
     model = YOLO(model_path)
     
-    # Directorio con imágenes de logos reales
-    images_dir = 'tests/test_images/logos_reales'
+    # Directorio con imágenes de logos en contexto (tipo Flickr27)
+    images_dir = 'tests/test_images/flickr27_style'
     
     if not os.path.exists(images_dir):
         print(f"❌ Directorio no encontrado: {images_dir}")
+        print("\n💡 INSTRUCCIONES:")
+        print("   1. Descarga imágenes con logos EN CONTEXTO (tipo Flickr27)")
+        print("   2. Busca en Google: 'Nike logo product photo', 'Starbucks cup', etc.")
+        print(f"   3. Guárdalas en: {images_dir}")
+        print("\n   O ejecuta: python tests/download_flickr27_test_images.py")
         return
     
     # Buscar todas las imágenes
@@ -35,7 +40,7 @@ def test_logos():
     for img_path in sorted(image_files):
         print(f"\n📸 {img_path.name}")
         
-        results = model(str(img_path), conf=0.25, save=True, project='runs/detect', name='logos_test')
+        results = model(str(img_path), conf=0.35, save=True, project='runs/detect', name='logos_test')
         
         detected = False
         for r in results:

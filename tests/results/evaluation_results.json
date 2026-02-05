@@ -1,6 +1,6 @@
 {
   "model_path": "models/models_org/weights/best.pt",
-  "evaluation_date": "2026-01-30T13:06:47.330044",
+  "evaluation_date": "2026-02-05T10:48:08.755145",
   "test_images": [
     {
       "image_path": "tests/test_images/shopping_brands.jpg",
@@ -57,14 +57,226 @@
       ]
     }
   ],
-  "test_videos": [],
+  "test_videos": [
+    {
+      "video_path": "tests/test_videos/10 Famous Brands as Animated Logos Motion Graphics.mp4",
+      "duration_seconds": 63.69696666666667,
+      "total_frames": 1909,
+      "fps": 29.97002997002997,
+      "brands_detected": {
+        "Ferrari": {
+          "frames_detected": 30,
+          "time_seconds": 5.005,
+          "percentage": 7.85751702462022,
+          "avg_confidence": 0.46515086392561594,
+          "first_appearance": 2.6693333333333333,
+          "last_appearance": 48.21483333333333
+        },
+        "Apple": {
+          "frames_detected": 10,
+          "time_seconds": 1.6683333333333334,
+          "percentage": 2.6191723415400734,
+          "avg_confidence": 0.45455034673213957,
+          "first_appearance": 7.1738333333333335,
+          "last_appearance": 34.200833333333335
+        },
+        "Vodafone": {
+          "frames_detected": 8,
+          "time_seconds": 1.3346666666666667,
+          "percentage": 2.095337873232059,
+          "avg_confidence": 0.421976201236248,
+          "first_appearance": 13.680333333333333,
+          "last_appearance": 33.86716666666667
+        },
+        "Nbc": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683333333333333,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.4765317738056183,
+          "first_appearance": 14.014000000000001,
+          "last_appearance": 14.014000000000001
+        },
+        "Cocacola": {
+          "frames_detected": 28,
+          "time_seconds": 4.671333333333333,
+          "percentage": 7.333682556312205,
+          "avg_confidence": 0.7015231624245644,
+          "first_appearance": 19.853166666666667,
+          "last_appearance": 24.357666666666667
+        },
+        "McDonalds": {
+          "frames_detected": 5,
+          "time_seconds": 0.8341666666666667,
+          "percentage": 1.3095861707700367,
+          "avg_confidence": 0.5292205333709716,
+          "first_appearance": 33.033,
+          "last_appearance": 55.221833333333336
+        },
+        "Pepsi": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683333333333333,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.5501357316970825,
+          "first_appearance": 34.034,
+          "last_appearance": 34.034
+        },
+        "Google": {
+          "frames_detected": 12,
+          "time_seconds": 2.0020000000000002,
+          "percentage": 3.1430068098480883,
+          "avg_confidence": 0.3953053330381711,
+          "first_appearance": 37.203833333333336,
+          "last_appearance": 44.711333333333336
+        },
+        "Nike": {
+          "frames_detected": 4,
+          "time_seconds": 0.6673333333333333,
+          "percentage": 1.0476689366160294,
+          "avg_confidence": 0.5248835012316704,
+          "first_appearance": 46.212833333333336,
+          "last_appearance": 59.726333333333336
+        },
+        "Puma": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683333333333333,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.4986157715320587,
+          "first_appearance": 46.379666666666665,
+          "last_appearance": 46.379666666666665
+        },
+        "Mini": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683333333333333,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.319808691740036,
+          "first_appearance": 59.225833333333334,
+          "last_appearance": 59.225833333333334
+        },
+        "Ford": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683333333333333,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.7770073413848877,
+          "first_appearance": 60.727333333333334,
+          "last_appearance": 60.727333333333334
+        }
+      }
+    },
+    {
+      "video_path": "tests/test_videos/10 Famous Brands as Animated Logos Motion Graphics_detected.mp4",
+      "duration_seconds": 63.69703036369703,
+      "total_frames": 1909,
+      "fps": 29.97,
+      "brands_detected": {
+        "Ferrari": {
+          "frames_detected": 22,
+          "time_seconds": 3.6703370036703373,
+          "percentage": 5.762179151388161,
+          "avg_confidence": 0.4151456098664891,
+          "first_appearance": 2.6693360026693362,
+          "last_appearance": 48.21488154821488
+        },
+        "Vodafone": {
+          "frames_detected": 3,
+          "time_seconds": 0.5005005005005005,
+          "percentage": 0.7857517024620221,
+          "avg_confidence": 0.3650519748528798,
+          "first_appearance": 13.513513513513514,
+          "last_appearance": 33.70036703370037
+        },
+        "Nbc": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.2615661025047302,
+          "first_appearance": 14.014014014014014,
+          "last_appearance": 14.014014014014014
+        },
+        "Apple": {
+          "frames_detected": 3,
+          "time_seconds": 0.5005005005005005,
+          "percentage": 0.7857517024620221,
+          "avg_confidence": 0.28309014439582825,
+          "first_appearance": 16.016016016016017,
+          "last_appearance": 32.8661995328662
+        },
+        "Cocacola": {
+          "frames_detected": 29,
+          "time_seconds": 4.838171504838171,
+          "percentage": 7.595599790466212,
+          "avg_confidence": 0.9497474699184812,
+          "first_appearance": 19.51951951951952,
+          "last_appearance": 24.357691024357692
+        },
+        "Nike": {
+          "frames_detected": 2,
+          "time_seconds": 0.33366700033366703,
+          "percentage": 0.5238344683080147,
+          "avg_confidence": 0.45197509229183197,
+          "first_appearance": 25.358692025358692,
+          "last_appearance": 55.72238905572239
+        },
+        "Pepsi": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.8832492828369141,
+          "first_appearance": 34.034034034034036,
+          "last_appearance": 34.034034034034036
+        },
+        "Adidas": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.3022993803024292,
+          "first_appearance": 40.04004004004004,
+          "last_appearance": 40.04004004004004
+        },
+        "Google": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.29976484179496765,
+          "first_appearance": 43.54354354354354,
+          "last_appearance": 43.54354354354354
+        },
+        "McDonalds": {
+          "frames_detected": 3,
+          "time_seconds": 0.5005005005005005,
+          "percentage": 0.7857517024620221,
+          "avg_confidence": 0.6580462058385214,
+          "first_appearance": 47.54754754754755,
+          "last_appearance": 55.22188855522189
+        },
+        "Ford": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.7736250758171082,
+          "first_appearance": 60.7273940607274,
+          "last_appearance": 60.7273940607274
+        }
+      }
+    }
+  ],
   "summary": {
     "total_images_tested": 8,
-    "total_videos_tested": 0,
+    "total_videos_tested": 2,
     "brands_detected": [
+      "Mini",
+      "Google",
+      "Vodafone",
       "Cocacola",
-      "Nike"
+      "Apple",
+      "Pepsi",
+      "Ferrari",
+      "Adidas",
+      "Puma",
+      "McDonalds",
+      "Ford",
+      "Nike",
+      "Nbc"
     ],
-    "average_confidence": 0.5688890516757965
+    "average_confidence": 0.5158419414356336
   }
 }

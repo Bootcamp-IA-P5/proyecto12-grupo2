@@ -72,7 +72,7 @@ def analyze_video(video_path, model_path='models/models_org/weights/best.pt'):
         # Detectar cada N frames para acelerar
         if frame_count % 5 == 0:
             frames_processed += 1
-            results = model(frame, verbose=False, conf=0.25)
+            results = model(frame, verbose=False, conf=0.35)
             
             # Dibujar detecciones en el frame
             annotated_frame = results[0].plot()

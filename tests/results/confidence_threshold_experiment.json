@@ -1,0 +1,73 @@
+{
+  "date": "2026-01-30T13:37:11.070497",
+  "model_path": "models/models_org/weights/best.pt",
+  "images_dir": "tests/test_images/logos_reales",
+  "total_images": 13,
+  "confidence_values_tested": [
+    0.15,
+    0.25,
+    0.35,
+    0.5,
+    0.7
+  ],
+  "results_by_confidence": {
+    "0.15": {
+      "total_detections": 6,
+      "images_with_detections": 4,
+      "detection_rate": 30.76923076923077,
+      "avg_confidence": 0.37315022697051364,
+      "avg_detections_per_image": 0.46153846153846156,
+      "detections_per_brand": {
+        "Citroen": 1,
+        "Adidas": 2,
+        "Nbc": 1,
+        "Cocacola": 1,
+        "Pepsi": 1
+      }
+    },
+    "0.25": {
+      "total_detections": 4,
+      "images_with_detections": 4,
+      "detection_rate": 30.76923076923077,
+      "avg_confidence": 0.45189572125673294,
+      "avg_detections_per_image": 0.3076923076923077,
+      "detections_per_brand": {
+        "Citroen": 1,
+        "Adidas": 1,
+        "Cocacola": 1,
+        "Pepsi": 1
+      }
+    },
+    "0.35": {
+      "total_detections": 1,
+      "images_with_detections": 1,
+      "detection_rate": 7.6923076923076925,
+      "avg_confidence": 0.9438233971595764,
+      "avg_detections_per_image": 0.07692307692307693,
+      "detections_per_brand": {
+        "Pepsi": 1
+      }
+    },
+    "0.5": {
+      "total_detections": 1,
+      "images_with_detections": 1,
+      "detection_rate": 7.6923076923076925,
+      "avg_confidence": 0.9438233971595764,
+      "avg_detections_per_image": 0.07692307692307693,
+      "detections_per_brand": {
+        "Pepsi": 1
+      }
+    },
+    "0.7": {
+      "total_detections": 1,
+      "images_with_detections": 1,
+      "detection_rate": 7.6923076923076925,
+      "avg_confidence": 0.9438233971595764,
+      "avg_detections_per_image": 0.07692307692307693,
+      "detections_per_brand": {
+        "Pepsi": 1
+      }
+    }
+  },
+  "recommended_threshold": 0.35
+}
