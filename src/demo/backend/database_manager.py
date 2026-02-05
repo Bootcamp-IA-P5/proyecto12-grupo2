@@ -358,3 +358,39 @@ class DatabaseManager(Logger):
             raise e
         finally:
             self.release_session(session)
+
+    def get_all_videos(self):
+        """
+        Retrieve all stored video analysis records from the database.
+        
+        Returns:
+            list: List of video records with video_id and title for each analysis
+        
+        Raises:
+            Exception: On database errors (logged and re-raised)
+        """
+        session = self.get_session()
+        try:
+            self.log.debug("Retrieving all video analyses")
+            
+            # Query all Video records
+            videos = session.query(Video).all()
+            
+            # Build result list with video_id and title
+            result = [
+                {
+                    "video_id": video.video_uuid,
+                    "title": video.name,
+                    "processed_at": str(video.processed_at)
+                }
+                for video in videos
+            ]
+            
+            self.log.debug(f"Retrieved {len(result)} video analyses")
+            return result
+            
+        except Exception as e:
+            self.log.error(f"Error retrieving all videos: {e}")
+            raise e
+        finally:
+            self.release_session(session)

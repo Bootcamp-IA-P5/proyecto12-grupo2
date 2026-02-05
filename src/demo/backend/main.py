@@ -334,6 +334,21 @@ async def analyze_stream(url: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/results/")
+async def list_results():
+    """
+    List all stored analysis results.
+    
+    Returns:
+        list: List of all analysis records with video_id and title
+    """
+    try:
+        # Get all videos from database
+        videos = db.get_all_videos()
+        return videos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/results/{video_id}")
 async def get_results(video_id: str):
     """

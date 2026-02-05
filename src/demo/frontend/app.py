@@ -60,7 +60,7 @@ class BrandAppUI(Logger):
             "exposure_percent": (exposure_seconds / total_time * 100) if total_time > 0 else 0,
             "brands": brand_durations,
             "video_id": res_data.get("video_id", "N/A"),
-            "raw_detections": detections # Keep for detailed views
+            "detections": detections  # Keep original detections with crop_path for image display
         }
 
     @st.dialog("Duplicate Analysis Found")
@@ -122,7 +122,8 @@ class BrandAppUI(Logger):
 
         st.title("🛡️ BrandTracker AI")
         
-        tab1, tab2 = st.tabs(["YouTube", "Upload"])
+        # Add a new tab for viewing previous analyses
+        tab1, tab2, tab3 = st.tabs(["YouTube", "Upload", "Previous Analyses"])
         with tab1:
             url = st.text_input("YouTube URL")
             if st.button("Analyze Link"):
@@ -135,8 +136,24 @@ class BrandAppUI(Logger):
                 res = requests.post(f"{self.url}/analyze/", files={"file": file}, stream=True)
                 self._process_analysis_stream(res)
 
-        if st.session_state.results:
-            self.render_results(st.session_state.results)
+        with tab3:
+            # Display previous analyses
+            st.subheader("Select a previous analysis to view:")
+            video_list = self.get_previous_analyses()
+            if video_list:
+                # Create a mapping of titles to video_ids for easy lookup
+                title_to_id = {video['title']: video['video_id'] for video in video_list}
+                titles = list(title_to_id.keys())
+                
+                selected_title = st.selectbox("Choose analysis", titles)
+                if st.button("Show Analysis"):
+                    selected_video_id = title_to_id[selected_title]
+                    self.show_previous_analysis(selected_video_id)
+            else:
+                st.info("No previous analyses found.")
+
+            if st.session_state.results:
+                self.render_results(st.session_state.results)
 
     def render_results(self, res):
         st.divider()
@@ -155,7 +172,16 @@ class BrandAppUI(Logger):
             for i, (name, sec) in enumerate(res['brands'].items()):
                 with cols[i]:
                     st.success(f"**{name}**\n\n{sec}s total")
-        
+
+        # Display images if available
+        if res.get('detections'):
+            st.subheader("Detected Images")
+            image_cols = st.columns(3)
+            for i, detection in enumerate(res['detections']):
+                if detection.get('crop_path'):
+                    with image_cols[i % 3]:
+                        st.image(detection['crop_path'], caption=f"{detection['brand_name']} at {detection['timestamp_sec']}s", width=200)
+
         # Action Bar
         with st.expander("View Raw Data"):
             st.json(res)
@@ -163,6 +189,28 @@ class BrandAppUI(Logger):
         if st.button("Start New Analysis"):
             st.session_state.results = None
             st.rerun()
+
+    def get_previous_analyses(self):
+        """Get list of previous analysis video titles and IDs from the backend"""
+        try:
+            res = requests.get(f"{self.url}/results/")
+            if res.status_code == 200:
+                videos = res.json()
+                # Return list of dictionaries with title and video_id
+                return [{'title': video.get('title', f"Video {video['video_id'][:8]}..."), 'video_id': video['video_id']} for video in videos]
+        except Exception as e:
+            st.error(f"Error fetching previous analyses: {e}")
+        return []
+
+    def show_previous_analysis(self, video_id):
+        """Fetch and display a previous analysis"""
+        try:
+            res = requests.get(f"{self.url}/results/{video_id}")
+            if res.status_code == 200:
+                st.session_state.results = self._process_raw_detections(res.json())
+                st.rerun()
+        except Exception as e:
+            st.error(f"Error fetching analysis: {e}")
 
 if __name__ == "__main__":
     ui = BrandAppUI(os.getenv("BACKEND_URL", BACKEND_URL))
