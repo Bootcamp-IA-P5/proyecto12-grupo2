@@ -1,0 +1,40 @@
+# Dataset configuration for Flickr Logos 27
+# Flickr Logos 27 Dataset - Logo Detection
+
+# Paths (se ajustarán en Colab automáticamente)
+path: /content/dataset/flickr_logos_27_dataset
+train: images/train
+val: images/val
+
+# Classes (27 marcas del dataset)
+names:
+  0: Adidas
+  1: Apple
+  2: BMW
+  3: Citroen
+  4: Coca Cola
+  5: DHL
+  6: Fedex
+  7: Ferrari
+  8: Ford
+  9: Google
+  10: HP
+  11: Heineken
+  12: Intel
+  13: McDonalds
+  14: Mini
+  15: Nbc
+  16: Nike
+  17: Pepsi
+  18: Porsche
+  19: Puma
+  20: Red Bull
+  21: Sprite
+  22: Starbucks
+  23: Texaco
+  24: Unicef
+  25: Vodafone
+  26: Yahoo
+
+# Number of classes
+nc: 27
