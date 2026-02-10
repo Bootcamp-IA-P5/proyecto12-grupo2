@@ -26,3 +26,6 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # YOLO model paths
 YOLO_MODEL_ORG = os.path.join(BASE_DIR, 'models/models_org_2/weights/best.pt')
+
+# Default confidence threshold
+DEFAULT_CONFIDENCE = float(os.getenv("DEFAULT_CONFIDENCE", "0.5"))

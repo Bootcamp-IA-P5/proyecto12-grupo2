@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from common.log_setup import log_setup
 from common.logger import Logger
-from settings import BACKEND_URL
+from settings import BACKEND_URL, DEFAULT_CONFIDENCE
 
 log_setup()
 
@@ -161,8 +161,21 @@ class BrandAppUI(Logger):
             st.session_state.current_tab = 'youtube'
             url = st.text_input("YouTube URL")
 
+            # Add confidence slider
+            confidence = st.slider(
+                "Confidence Threshold",
+                key="tab01",
+                min_value=0.0,
+                max_value=1.0,
+                value=DEFAULT_CONFIDENCE,
+                step=0.05,
+                help="Minimum confidence score for brand detection (0.0 = very sensitive, 1.0 = very strict)"
+            )
+
             if st.button("Analyze Link"):
-                res = requests.post(f"{self.url}/analyze-stream/", params={"url": url}, stream=True)
+                res = requests.post(f"{self.url}/analyze-stream/", 
+                                    params={"url": url, "confidence": confidence}, 
+                                    stream=True)
                 self._process_analysis_stream(res, 'youtube')
 
             if st.session_state.youtube_results:
@@ -170,10 +183,24 @@ class BrandAppUI(Logger):
         
         with tab2:
             st.session_state.current_tab = 'upload'
-            file = st.file_uploader("Video File")
+            file = st.file_uploader("Video/Image File")
+
+            # Add confidence slider
+            confidence = st.slider(
+                "Confidence Threshold",
+                key="tab2",
+                min_value=0.0,
+                max_value=1.0,
+                value=DEFAULT_CONFIDENCE,
+                step=0.05,
+                help="Minimum confidence score for brand detection (0.0 = very sensitive, 1.0 = very strict)"
+            )
 
             if st.button("Analyze Upload"):
-                res = requests.post(f"{self.url}/analyze/", files={"file": file}, stream=True)
+                res = requests.post(f"{self.url}/analyze/", 
+                                    files={"file": file}, 
+                                    params={"confidence": confidence},
+                                    stream=True)
                 self._process_analysis_stream(res, 'upload')
 
             if st.session_state.upload_results:
@@ -201,21 +228,36 @@ class BrandAppUI(Logger):
 
     def render_results(self, res):
         st.divider()
-        st.header(f"📊 Audit Report: {res['title']}")
+        
+        # Determine if this is an image or video analysis
+        is_image = res.get('total_seconds', 0) == 0 and res.get('exposure_seconds', 0) > 0
+        
+        if is_image:
+            st.header(f"📸 Image Analysis: {res['title']}")
+        else:
+            st.header(f"📊 Audit Report: {res['title']}")
         
         # Metrics
         m1, m2, m3 = st.columns(3)
-        m1.metric("Brand Exposure", f"{res['exposure_seconds']}s")
-        m2.metric("Total Video", f"{int(res['total_seconds'])}s")
-        m3.metric("Visibility Share", f"{res['exposure_percent']:.1f}%")
+        if is_image:
+            m1.metric("Brand Detections", f"{res['exposure_seconds']}")
+            m2.metric("Analysis Type", "Image")
+            m3.metric("Detection Rate", f"{res['exposure_percent']:.1f}%")
+        else:
+            m1.metric("Brand Exposure", f"{res['exposure_seconds']}s")
+            m2.metric("Total Video", f"{int(res['total_seconds'])}s")
+            m3.metric("Visibility Share", f"{res['exposure_percent']:.1f}%")
 
         # Brands
         st.subheader("Detected Brands")
         if res['brands']:
             cols = st.columns(len(res['brands']))
-            for i, (name, sec) in enumerate(res['brands'].items()):
+            for i, (name, count_or_sec) in enumerate(res['brands'].items()):
                 with cols[i]:
-                    st.success(f"**{name}**\n\n{sec}s total")
+                    if is_image:
+                        st.success(f"**{name}**\n\n{count_or_sec} detections")
+                    else:
+                        st.success(f"**{name}**\n\n{count_or_sec}s total")
 
         # Display images if available
         if res.get('detections'):
@@ -224,7 +266,20 @@ class BrandAppUI(Logger):
             for i, detection in enumerate(res['detections']):
                 if detection.get('crop_path'):
                     with image_cols[i % 3]:
-                        st.image(detection['crop_path'], caption=f"{detection['brand_name']} at {detection['timestamp_sec']}s", width=200)
+                        # Extract confidence from the detection data
+                        confidence = detection.get('confidence', 0.0)
+                        confidence_percent = f"{confidence * 100:.1f}%"
+                        
+                        # Display image
+                        st.image(detection['crop_path'], width=200)
+                        
+                        # Display information below the image using markdown
+                        st.markdown(f"**{detection['brand_name']}**")
+                        if is_image:
+                            st.markdown(f"🎯 Confidence: {confidence_percent}")
+                        else:
+                            st.markdown(f"⏱️ {detection['timestamp_sec']}s")
+                            st.markdown(f"🎯 Confidence: {confidence_percent}")
 
         # Action Bar
         with st.expander("View Raw Data"):
