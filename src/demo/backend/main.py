@@ -45,6 +45,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from backend.database_manager import DatabaseManager
 from backend.model_worker import BrandInspector
+from settings import DEFAULT_CONFIDENCE
 
 app = FastAPI()
 db = DatabaseManager()
@@ -62,55 +63,70 @@ async def get_model_info():
     return yolo.get_model_info()
 
 @app.post("/analyze/")
-async def analyze_video(file: UploadFile = File(...)):
+async def analyze_file(file: UploadFile = File(...), confidence: float = DEFAULT_CONFIDENCE):
     """
-    Analyze an uploaded video file for brand exposure using YOLO detection.
+    Analyze an uploaded file (image or video) for brand exposure using YOLO detection.
     
-    This endpoint accepts a video file upload, processes it frame-by-frame, and returns
+    This endpoint accepts either an image or video file upload, processes it, and returns
     real-time streaming updates as a StreamingResponse with NDJSON format.
     
-    Before starting analysis, it checks if a video with the same name already exists
+    Before starting analysis, it checks if a file with the same name already exists
     in the database. If found, it returns a duplicate detection response.
     
     Streaming Progress Format:
-        - Duplicate object (type="duplicate"): Sent if video already exists with existing video_id
+        - Duplicate object (type="duplicate"): Sent if file already exists with existing video_id
         - Progress objects (type="progress"): Sent during analysis with current frame metrics
         - Complete object (type="complete"): Sent at end with final results and video_id for storage
         - Error object (type="error"): Sent if analysis fails
     
     Args:
-        file (UploadFile): Video file to analyze (supported formats: mp4, avi, mov, etc.)
+        file (UploadFile): Image or video file to analyze
+        confidence (float): Confidence threshold for brand detection (0.0-1.0, default 0.5)
     
     Returns:
         StreamingResponse: NDJSON-formatted stream with analysis progress and final results.
             Each line contains a JSON object with:
             - type: "duplicate", "progress", "complete", or "error"
             - For duplicate: existing_video_id (UUID) of the already stored analysis
-            - For progress: timestamp, brands detected in frame, progress percentage, detected_seconds
+            - For progress: timestamp, brands detected, progress percentage, detected_seconds
             - For complete: video_id (UUID), title, exposure metrics, and brand breakdown
     
     Raises:
         HTTPException: 500 error if file processing or analysis fails
     """
     try:
-        # Check if video already exists in database by filename
+        # Validate confidence parameter
+        if not 0.0 <= confidence <= 1.0:
+            raise HTTPException(status_code=400, detail="Confidence must be between 0.0 and 1.0")
+        
+        # Check if file already exists in database by filename
         existing_analysis = db.read_analysis(file.filename)
         if existing_analysis:
-            # Video already exists, return duplicate response
+            # File already exists, return duplicate response
             duplicate_response = {
                 "type": "duplicate",
                 "existing_video_id": existing_analysis["video_id"],
                 "title": existing_analysis["title"],
-                "message": f"Video '{file.filename}' already exists in database with ID: {existing_analysis['video_id']}"
+                "message": f"File '{file.filename}' already exists in database with ID: {existing_analysis['video_id']}"
             }
             return StreamingResponse(
                 [json.dumps(duplicate_response) + "\n"],
                 media_type="application/x-ndjson"
             )
         
+        # Determine file type and set appropriate suffix
+        file_extension = Path(file.filename).suffix.lower()
+        is_image = file_extension in {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+        is_video = file_extension in {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv'}
+        
+        if not (is_image or is_video):
+            raise HTTPException(status_code=400, detail=f"Unsupported file format: {file_extension}")
+        
         # Save uploaded file to temporary location for processing
-        video_id = str(uuid.uuid4())
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+        file_id = str(uuid.uuid4())
+        suffix = ".jpg" if is_image else ".mp4"
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             content = await file.read()
             tmp.write(content)
             tmp_path = tmp.name
@@ -118,75 +134,113 @@ async def analyze_video(file: UploadFile = File(...)):
         # Define generator function for streaming analysis progress
         def generate_analysis():
             """
-            Generator that yields NDJSON-formatted progress updates during video analysis.
+            Generator that yields NDJSON-formatted progress updates during file analysis.
             
             Yields:
                 str: JSON line containing progress or final result objects
             """
             try:
-                frames_data = []
-                total_duration = 0
-                total_detected = 0
-                final_brands = {}
-                
-                # Stream progress for each frame as it's analyzed (BrandInspector yields frame data)
-                for frame_info in yolo.analyze_local_video_stream(tmp_path):
-                    frames_data.append(frame_info)
-                    total_duration = frame_info.get("frame_index", 0) / 30  # Rough estimate from frame count
+                if is_image:
+                    # Analyze single image
+                    frame_info = yolo.analyze_image(tmp_path, conf=confidence)
+                    if frame_info is None:
+                        raise Exception("Failed to analyze image")
+                    
+                    # Calculate metrics for image
                     total_detected = frame_info.get("detected_seconds", 0)
                     final_brands = frame_info.get("brand_counts", {})
                     
-                    # Yield progress update as NDJSON object (type="progress")
-                    progress_data = {
-                        "type": "progress",
-                        "timestamp": frame_info.get("timestamp", 0),
-                        "brands": frame_info.get("brands", {}),
-                        "progress": frame_info.get("progress", 0),
-                        "detected_seconds": total_detected
+                    # Save analysis to database for later retrieval
+                    analysis_record = {
+                        "video_id": file_id,  # Reuse video_id field for images
+                        "title": file.filename,
+                        "detected_seconds": total_detected,
+                        "total_duration": 0,  # No duration for images
+                        "brand_exposure_percent": 100.0 if total_detected > 0 else 0.0,
+                        "brands": final_brands,
+                        "frames_data": [frame_info]  # Single frame in array
                     }
-                    yield json.dumps(progress_data) + "\n"
-                
-                # Get final metrics from last frame
-                if frames_data:
-                    last_frame = frames_data[-1]
-                    total_detected = last_frame.get("detected_seconds", 0)
-                    final_brands = last_frame.get("brand_counts", {})
-                
-                # Calculate brand exposure as percentage of total video duration
-                exposure_percent = (total_detected / max(total_duration, 1) * 100) if total_duration > 0 else 0
-                
-                # Save analysis to database for later retrieval
-                analysis_record = {
-                    "video_id": video_id,
-                    "title": file.filename,
-                    "detected_seconds": total_detected,
-                    "total_duration": total_duration,
-                    "brand_exposure_percent": exposure_percent,
-                    "brands": final_brands,
-                    "frames_data": frames_data
-                }
-                
-                db.create_analysis(analysis_record)
-                
-                # Yield final result as NDJSON object (type="complete") with video_id for storage
-                final_result = {
-                    "status": "success",
-                    "video_id": video_id,
-                    "title": file.filename,
-                    "exposure_seconds": total_detected,
-                    "total_seconds": total_duration,
-                    "exposure_percent": exposure_percent,
-                    "brands": final_brands
-                }
-                
-                yield json.dumps({"type": "complete", "result": final_result}) + "\n"
-                
+                    
+                    db.create_analysis(analysis_record)
+                    
+                    # Yield final result as NDJSON object (type="complete") with file_id for storage
+                    final_result = {
+                        "status": "success",
+                        "video_id": file_id,
+                        "title": file.filename,
+                        "exposure_seconds": total_detected,  # Count of detections
+                        "total_seconds": 0,
+                        "exposure_percent": 100.0 if total_detected > 0 else 0.0,
+                        "brands": final_brands
+                    }
+                    
+                    yield json.dumps({"type": "complete", "result": final_result}) + "\n"
+                    
+                else:
+                    # Analyze video (existing logic)
+                    frames_data = []
+                    total_duration = 0
+                    total_detected = 0
+                    final_brands = {}
+                    
+                    # Stream progress for each frame as it's analyzed (BrandInspector yields frame data)
+                    for frame_info in yolo.analyze_local_video_stream(tmp_path, conf=confidence):
+                        frames_data.append(frame_info)
+                        total_duration = frame_info.get("frame_index", 0) / 30  # Rough estimate from frame count
+                        total_detected = frame_info.get("detected_seconds", 0)
+                        final_brands = frame_info.get("brand_counts", {})
+                        
+                        # Yield progress update as NDJSON object (type="progress")
+                        progress_data = {
+                            "type": "progress",
+                            "timestamp": frame_info.get("timestamp", 0),
+                            "brands": frame_info.get("brands", {}),
+                            "progress": frame_info.get("progress", 0),
+                            "detected_seconds": total_detected
+                        }
+                        yield json.dumps(progress_data) + "\n"
+                    
+                    # Get final metrics from last frame
+                    if frames_data:
+                        last_frame = frames_data[-1]
+                        total_detected = last_frame.get("detected_seconds", 0)
+                        final_brands = last_frame.get("brand_counts", {})
+                    
+                    # Calculate brand exposure as percentage of total video duration
+                    exposure_percent = (total_detected / max(total_duration, 1) * 100) if total_duration > 0 else 0
+                    
+                    # Save analysis to database for later retrieval
+                    analysis_record = {
+                        "video_id": file_id,
+                        "title": file.filename,
+                        "detected_seconds": total_detected,
+                        "total_duration": total_duration,
+                        "brand_exposure_percent": exposure_percent,
+                        "brands": final_brands,
+                        "frames_data": frames_data
+                    }
+                    
+                    db.create_analysis(analysis_record)
+                    
+                    # Yield final result as NDJSON object (type="complete") with file_id for storage
+                    final_result = {
+                        "status": "success",
+                        "video_id": file_id,
+                        "title": file.filename,
+                        "exposure_seconds": total_detected,
+                        "total_seconds": total_duration,
+                        "exposure_percent": exposure_percent,
+                        "brands": final_brands
+                    }
+                    
+                    yield json.dumps({"type": "complete", "result": final_result}) + "\n"
+                    
             except Exception as e:
                 log.error(f"Analysis error: {e}")
                 # Yield error as NDJSON object (type="error") so frontend can display error message
                 yield json.dumps({"type": "error", "detail": str(e)}) + "\n"
             finally:
-                # Clean up temporary video file after analysis completes
+                # Clean up temporary file after analysis completes
                 Path(tmp_path).unlink(missing_ok=True)
         
         return StreamingResponse(generate_analysis(), media_type="application/x-ndjson")
@@ -195,7 +249,7 @@ async def analyze_video(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analyze-stream/")
-async def analyze_stream(url: str):
+async def analyze_stream(url: str, confidence: float = DEFAULT_CONFIDENCE):
     """
     Analyze a video from a YouTube URL for brand exposure using YOLO detection.
     
@@ -232,6 +286,10 @@ async def analyze_stream(url: str):
         
         # First, try to get video title from URL to check for duplicates
         try:
+            # Validate confidence parameter
+            if not 0.0 <= confidence <= 1.0:
+                raise HTTPException(status_code=400, detail="Confidence must be between 0.0 and 1.0")
+        
             import yt_dlp
             ydl_opts = {
                 'format': 'best[height<=480]',
@@ -276,7 +334,7 @@ async def analyze_stream(url: str):
                 title = ""
                 
                 # Stream progress for each frame as it's analyzed (BrandInspector handles YouTube download)
-                for frame_info in yolo.analyze_stream(url):
+                for frame_info in yolo.analyze_stream(url, conf=confidence):
                     frames_data.append(frame_info)
                     total_duration = frame_info.get("duration", 0)
                     total_detected = frame_info.get("detected_seconds", 0)

@@ -45,6 +45,8 @@ from ultralytics import YOLO
 from settings import YOLO_MODEL_ORG
 import yt_dlp
 
+from settings import DEFAULT_CONFIDENCE
+
 log_setup()
 
 
@@ -80,7 +82,7 @@ class BrandInspector(Logger):
         self.crop_dir.mkdir(parents=True, exist_ok=True)
         self.log.debug(f"Bounding box images will be saved to: {self.crop_dir}")
 
-    def analyze_local_video_stream(self, video_path, conf=0.50):
+    def analyze_local_video_stream(self, video_path, conf=DEFAULT_CONFIDENCE):
         """
         Analyze a local video file frame-by-frame and yield brand detection results.
         
@@ -196,7 +198,7 @@ class BrandInspector(Logger):
         
         self.log.debug(f"Analysis complete: {detected_seconds}s detected, {len(brand_counts)} unique brands")
     
-    def analyze_stream(self, url, conf=0.50):
+    def analyze_stream(self, url, conf=DEFAULT_CONFIDENCE):
         """
         Analyze a video from a YouTube URL frame-by-frame and yield brand detection results.
         
@@ -388,6 +390,93 @@ class BrandInspector(Logger):
             
         except Exception as e:
             self.log.error(f"Error saving bounding box image: {e}")
+            return None
+    
+    def analyze_image(self, image_path, conf=DEFAULT_CONFIDENCE):
+        """
+        Analyze a single image for brand detection using YOLO.
+        
+        This method processes a single image file and returns brand detection results
+        in the same format as video frame analysis for consistency.
+        
+        Args:
+            image_path (str): Path to image file
+            conf (float): YOLO confidence threshold for detections (0-1, default from settings)
+        
+        Returns:
+            dict: Analysis results with keys:
+                - timestamp (int): 0 (no timestamp for single image)
+                - brands (dict): {brand_name: [confidence_scores]} detected in image
+                - frame_index (int): 1 (single image treated as one frame)
+                - progress (float): 1.0 (100% complete for single image)
+                - detected_seconds (int): 1 if brands detected, 0 otherwise
+                - brand_counts (dict): {brand_name: count} total detections in image
+        
+        Raises:
+            Returns None if image file cannot be opened or processed
+        """
+        self.log.debug(f"Analyzing image: {image_path}")
+        
+        try:
+            # Read image file
+            image = cv2.imread(image_path)
+            if image is None:
+                self.log.error(f"Could not read image: {image_path}")
+                return None
+            
+            # Run YOLO inference on the image
+            results = self.model.predict(image, conf=conf, device='cpu', verbose=False)
+            
+            # Initialize tracking variables
+            detected_seconds = 0  # Will be 1 if any brands detected
+            brand_counts = {}     # Dictionary to accumulate brand detection counts
+            
+            # Track brands detected in this image
+            brands_this_image = {}
+            if len(results[0].boxes) > 0:
+                detected_seconds = 1  # Increment counter since brands were found
+                
+                # Iterate through detections and extract brand info
+                for box in results[0].boxes:
+                    cls_id = int(box.cls[0])  # Class ID from detection
+                    brand_name = self.model.names[cls_id]  # Convert ID to brand name
+                    confidence = float(box.conf[0])  # Detection confidence score
+                    
+                    # Extract bounding box coordinates
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    
+                    # Extract and save bounding box image
+                    crop_path = self._save_bounding_box_image(
+                        image, x1, y1, x2, y2, brand_name, 0, 1
+                    )
+                    
+                    # Store confidence scores and crop path for this brand in this image
+                    if brand_name not in brands_this_image:
+                        brands_this_image[brand_name] = []
+                    brands_this_image[brand_name].append({
+                        'confidence': confidence,
+                        'crop_path': crop_path,
+                        'bbox': [x1, y1, x2, y2]
+                    })
+                
+                # Update cumulative brand counts (how many times each brand appears)
+                for br, detections in brands_this_image.items():
+                    brand_counts[br] = brand_counts.get(br, 0) + len(detections)
+            
+            self.log.debug(f"Image analysis complete: {detected_seconds} detections, {len(brand_counts)} unique brands")
+            
+            # Return results in same format as video frame analysis
+            return {
+                "timestamp": 0,
+                "brands": brands_this_image,
+                "frame_index": 1,
+                "progress": 1.0,
+                "detected_seconds": detected_seconds,
+                "brand_counts": dict(brand_counts)
+            }
+            
+        except Exception as e:
+            self.log.error(f"Image analysis error: {e}")
             return None
     
     def get_model_info(self):
