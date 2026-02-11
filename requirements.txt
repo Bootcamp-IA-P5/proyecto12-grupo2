@@ -1,11 +1,20 @@
 # requirements.txt
 --extra-index-url https://download.pytorch.org/whl/cpu
 
+colorlog
+fastapi
+uvicorn[standard] 
+python-multipart
+sqlalchemy
 python-dotenv
 streamlit
 ultralytics
 psycopg2-binary
 opencv-python
-onnxruntime  # High-performance CPU inference
-# libgl1  # Required for OpenCV graphics support
+onnxruntime  # High-performance CPU inferenceSS
 yt-dlp
+fastapi
+uvicorn
+python-multipart
+pillow
+plotly
