@@ -209,6 +209,12 @@ async def analyze_file(file: UploadFile = File(...), confidence: float = DEFAULT
                     # Calculate brand exposure as percentage of total video duration
                     exposure_percent = (total_detected / max(total_duration, 1) * 100) if total_duration > 0 else 0
                     
+                    # Calculate per-brand visibility percentages
+                    brand_visibility_percent = {}
+                    if total_duration > 0:
+                        for brand, seconds in final_brands.items():
+                            brand_visibility_percent[brand] = (seconds / total_duration) * 100
+                    
                     # Save analysis to database for later retrieval
                     analysis_record = {
                         "video_id": file_id,
@@ -217,6 +223,7 @@ async def analyze_file(file: UploadFile = File(...), confidence: float = DEFAULT
                         "total_duration": total_duration,
                         "brand_exposure_percent": exposure_percent,
                         "brands": final_brands,
+                        "brand_visibility_percent": brand_visibility_percent,
                         "frames_data": frames_data
                     }
                     
@@ -230,7 +237,8 @@ async def analyze_file(file: UploadFile = File(...), confidence: float = DEFAULT
                         "exposure_seconds": total_detected,
                         "total_seconds": total_duration,
                         "exposure_percent": exposure_percent,
-                        "brands": final_brands
+                        "brands": final_brands,
+                        "brand_visibility_percent": brand_visibility_percent
                     }
                     
                     yield json.dumps({"type": "complete", "result": final_result}) + "\n"
@@ -354,6 +362,12 @@ async def analyze_stream(url: str, confidence: float = DEFAULT_CONFIDENCE):
                 # Calculate brand exposure as percentage of total video duration
                 exposure_percent = (total_detected / max(total_duration, 1) * 100) if total_duration > 0 else 0
                 
+                # Calculate per-brand visibility percentages
+                brand_visibility_percent = {}
+                if total_duration > 0:
+                    for brand, seconds in final_brands.items():
+                        brand_visibility_percent[brand] = (seconds / total_duration) * 100
+                
                 # Create analysis record with unique video_id for database storage
                 video_id = str(uuid.uuid4())
                 analysis_record = {
@@ -363,6 +377,7 @@ async def analyze_stream(url: str, confidence: float = DEFAULT_CONFIDENCE):
                     "total_duration": total_duration,
                     "brand_exposure_percent": exposure_percent,
                     "brands": final_brands,
+                    "brand_visibility_percent": brand_visibility_percent,
                     "frames_data": frames_data
                 }
                 
@@ -377,7 +392,8 @@ async def analyze_stream(url: str, confidence: float = DEFAULT_CONFIDENCE):
                     "exposure_seconds": total_detected,
                     "total_seconds": total_duration,
                     "exposure_percent": exposure_percent,
-                    "brands": final_brands
+                    "brands": final_brands,
+                    "brand_visibility_percent": brand_visibility_percent
                 }
                 
                 yield json.dumps({"type": "complete", "result": final_result}) + "\n"

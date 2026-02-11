@@ -3,6 +3,8 @@ import json
 import os
 import requests
 import streamlit as st
+import plotly.graph_objects as go
+import plotly.express as px
 from pathlib import Path
 
 # Ensure parent `demo/` directory is on sys.path so `common` imports work
@@ -53,6 +55,14 @@ class BrandAppUI(Logger):
         
         # If the backend already sent a summary, use it; otherwise, calculate it
         if "exposure_seconds" in res_data:
+            # Ensure backward compatibility: if brand_visibility_percent is missing, calculate it
+            if "brand_visibility_percent" not in res_data and "brands" in res_data and "total_seconds" in res_data:
+                brand_visibility_percent = {}
+                total_duration = res_data.get("total_seconds", 0)
+                if total_duration > 0:
+                    for brand, seconds in res_data["brands"].items():
+                        brand_visibility_percent[brand] = (seconds / total_duration) * 100
+                res_data["brand_visibility_percent"] = brand_visibility_percent
             return res_data
 
         # Calculate metrics from raw detections
@@ -72,12 +82,19 @@ class BrandAppUI(Logger):
         total_time = res_data.get("total_seconds") or (max(unique_timestamps) if unique_timestamps else 0)
         exposure_seconds = len(unique_timestamps)
         
+        # Calculate per-brand visibility percentages for backward compatibility
+        brand_visibility_percent = {}
+        if total_time > 0:
+            for brand, seconds in brand_durations.items():
+                brand_visibility_percent[brand] = (seconds / total_time) * 100
+        
         return {
             "title": res_data.get("title", "Unknown Video"),
             "exposure_seconds": exposure_seconds,
             "total_seconds": total_time,
             "exposure_percent": (exposure_seconds / total_time * 100) if total_time > 0 else 0,
             "brands": brand_durations,
+            "brand_visibility_percent": brand_visibility_percent,
             "video_id": res_data.get("video_id", "N/A"),
             "detections": detections  # Keep original detections with crop_path for image display
         }
@@ -251,13 +268,49 @@ class BrandAppUI(Logger):
         # Brands
         st.subheader("Detected Brands")
         if res['brands']:
-            cols = st.columns(len(res['brands']))
-            for i, (name, count_or_sec) in enumerate(res['brands'].items()):
-                with cols[i]:
-                    if is_image:
-                        st.success(f"**{name}**\n\n{count_or_sec} detections")
-                    else:
-                        st.success(f"**{name}**\n\n{count_or_sec}s total")
+            # Create visualization for brand visibility distribution (video only)
+            if not is_image and res.get('brand_visibility_percent'):
+                # Prepare data for visualization
+                brands = list(res['brands'].keys())
+                visibility_percentages = [res['brand_visibility_percent'].get(brand, 0) for brand in brands]
+                total_seconds = [res['brands'][brand] for brand in brands]
+                
+                # Display brand cards
+                cols = st.columns(len(res['brands']))
+                for i, (name, count_or_sec) in enumerate(res['brands'].items()):
+                    with cols[i]:
+                        # Display brand name, total seconds, and visibility percentage
+                        brand_seconds = count_or_sec
+                        brand_visibility = res.get('brand_visibility_percent', {}).get(name, 0)
+                        st.success(f"**{name}**\n\n⏱️ {brand_seconds}s total\n\n📊 {brand_visibility:.1f}% visibility")
+                
+                # Create pie chart for brand visibility distribution
+                fig = px.pie(
+                    values=visibility_percentages,
+                    names=brands,
+                    title="Brand Visibility Distribution",
+                    hole=0.3,
+                    color_discrete_sequence=px.colors.qualitative.Set3
+                )
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                fig.update_layout(
+                    title_font_size=16,
+                    showlegend=True,
+                    height=400
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                # For images or when no visibility data, use original layout
+                cols = st.columns(len(res['brands']))
+                for i, (name, count_or_sec) in enumerate(res['brands'].items()):
+                    with cols[i]:
+                        if is_image:
+                            st.success(f"**{name}**\n\n{count_or_sec} detections")
+                        else:
+                            # Display brand name, total seconds, and visibility percentage
+                            brand_seconds = count_or_sec
+                            brand_visibility = res.get('brand_visibility_percent', {}).get(name, 0)
+                            st.success(f"**{name}**\n\n⏱️ {brand_seconds}s total\n\n📊 {brand_visibility:.1f}% visibility")
 
         # Display images if available
         if res.get('detections'):
