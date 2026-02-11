@@ -1,9 +1,24 @@
 {
-  "model_path": "models/models_org/weights/best.pt",
-  "evaluation_date": "2026-02-05T10:48:08.755145",
+  "model_path": "models/models_mgg/weights/best.pt",
+  "evaluation_date": "2026-02-11T13:48:31.235865",
   "test_images": [
     {
-      "image_path": "tests/test_images/shopping_brands.jpg",
+      "image_path": "tests/test_images/adidas_store.jpg",
+      "detections": [
+        {
+          "brand": "Nike",
+          "confidence": 0.5971869230270386,
+          "bbox": [
+            496.4595031738281,
+            217.0137176513672,
+            634.91650390625,
+            334.2693176269531
+          ]
+        }
+      ]
+    },
+    {
+      "image_path": "tests/test_images/apple_products.jpg",
       "detections": []
     },
     {
@@ -11,12 +26,12 @@
       "detections": [
         {
           "brand": "Cocacola",
-          "confidence": 0.7707999348640442,
+          "confidence": 0.4340486228466034,
           "bbox": [
-            85.4588851928711,
-            418.7071228027344,
-            312.5261535644531,
-            504.4377136230469
+            86.04969024658203,
+            409.8165283203125,
+            317.2415771484375,
+            515.3645629882812
           ]
         }
       ]
@@ -26,11 +41,11 @@
       "detections": []
     },
     {
-      "image_path": "tests/test_images/apple_products.jpg",
+      "image_path": "tests/test_images/nike_shoes.jpg",
       "detections": []
     },
     {
-      "image_path": "tests/test_images/nike_shoes.jpg",
+      "image_path": "tests/test_images/shopping_brands.jpg",
       "detections": []
     },
     {
@@ -40,21 +55,6 @@
     {
       "image_path": "tests/test_images/starbucks.jpg",
       "detections": []
-    },
-    {
-      "image_path": "tests/test_images/adidas_store.jpg",
-      "detections": [
-        {
-          "brand": "Nike",
-          "confidence": 0.36697816848754883,
-          "bbox": [
-            343.0986022949219,
-            242.03323364257812,
-            687.5125732421875,
-            452.3805236816406
-          ]
-        }
-      ]
     }
   ],
   "test_videos": [
@@ -65,100 +65,84 @@
       "fps": 29.97002997002997,
       "brands_detected": {
         "Ferrari": {
-          "frames_detected": 30,
-          "time_seconds": 5.005,
-          "percentage": 7.85751702462022,
-          "avg_confidence": 0.46515086392561594,
-          "first_appearance": 2.6693333333333333,
-          "last_appearance": 48.21483333333333
+          "frames_detected": 34,
+          "time_seconds": 5.6723333333333334,
+          "percentage": 8.90518596123625,
+          "avg_confidence": 0.7755293530576369,
+          "first_appearance": 0.8341666666666667,
+          "last_appearance": 19.019000000000002
         },
-        "Apple": {
-          "frames_detected": 10,
-          "time_seconds": 1.6683333333333334,
-          "percentage": 2.6191723415400734,
-          "avg_confidence": 0.45455034673213957,
-          "first_appearance": 7.1738333333333335,
-          "last_appearance": 34.200833333333335
-        },
-        "Vodafone": {
-          "frames_detected": 8,
-          "time_seconds": 1.3346666666666667,
-          "percentage": 2.095337873232059,
-          "avg_confidence": 0.421976201236248,
-          "first_appearance": 13.680333333333333,
-          "last_appearance": 33.86716666666667
-        },
-        "Nbc": {
+        "Fedex": {
           "frames_detected": 1,
           "time_seconds": 0.16683333333333333,
           "percentage": 0.26191723415400736,
-          "avg_confidence": 0.4765317738056183,
-          "first_appearance": 14.014000000000001,
-          "last_appearance": 14.014000000000001
+          "avg_confidence": 0.387825608253479,
+          "first_appearance": 12.846166666666667,
+          "last_appearance": 12.846166666666667
+        },
+        "Nike": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683333333333333,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.45028239488601685,
+          "first_appearance": 16.182833333333335,
+          "last_appearance": 16.182833333333335
         },
         "Cocacola": {
-          "frames_detected": 28,
-          "time_seconds": 4.671333333333333,
-          "percentage": 7.333682556312205,
-          "avg_confidence": 0.7015231624245644,
-          "first_appearance": 19.853166666666667,
+          "frames_detected": 26,
+          "time_seconds": 4.337666666666666,
+          "percentage": 6.80984808800419,
+          "avg_confidence": 0.7168640058774215,
+          "first_appearance": 20.186833333333333,
           "last_appearance": 24.357666666666667
         },
-        "McDonalds": {
+        "Apple": {
           "frames_detected": 5,
           "time_seconds": 0.8341666666666667,
           "percentage": 1.3095861707700367,
-          "avg_confidence": 0.5292205333709716,
-          "first_appearance": 33.033,
-          "last_appearance": 55.221833333333336
+          "avg_confidence": 0.4166567027568817,
+          "first_appearance": 33.70033333333333,
+          "last_appearance": 56.723333333333336
         },
         "Pepsi": {
           "frames_detected": 1,
           "time_seconds": 0.16683333333333333,
           "percentage": 0.26191723415400736,
-          "avg_confidence": 0.5501357316970825,
+          "avg_confidence": 0.5742725133895874,
           "first_appearance": 34.034,
           "last_appearance": 34.034
         },
-        "Google": {
-          "frames_detected": 12,
-          "time_seconds": 2.0020000000000002,
-          "percentage": 3.1430068098480883,
-          "avg_confidence": 0.3953053330381711,
+        "Heineken": {
+          "frames_detected": 13,
+          "time_seconds": 2.168833333333333,
+          "percentage": 3.404924044002095,
+          "avg_confidence": 0.8945657977691064,
           "first_appearance": 37.203833333333336,
           "last_appearance": 44.711333333333336
         },
-        "Nike": {
-          "frames_detected": 4,
-          "time_seconds": 0.6673333333333333,
-          "percentage": 1.0476689366160294,
-          "avg_confidence": 0.5248835012316704,
-          "first_appearance": 46.212833333333336,
-          "last_appearance": 59.726333333333336
+        "Sprite": {
+          "frames_detected": 29,
+          "time_seconds": 4.838166666666667,
+          "percentage": 7.595599790466213,
+          "avg_confidence": 0.6405487677146648,
+          "first_appearance": 43.376666666666665,
+          "last_appearance": 61.72833333333333
         },
-        "Puma": {
+        "McDonalds": {
+          "frames_detected": 2,
+          "time_seconds": 0.33366666666666667,
+          "percentage": 0.5238344683080147,
+          "avg_confidence": 0.6197847872972488,
+          "first_appearance": 47.5475,
+          "last_appearance": 47.714333333333336
+        },
+        "Nbc": {
           "frames_detected": 1,
           "time_seconds": 0.16683333333333333,
           "percentage": 0.26191723415400736,
-          "avg_confidence": 0.4986157715320587,
-          "first_appearance": 46.379666666666665,
-          "last_appearance": 46.379666666666665
-        },
-        "Mini": {
-          "frames_detected": 1,
-          "time_seconds": 0.16683333333333333,
-          "percentage": 0.26191723415400736,
-          "avg_confidence": 0.319808691740036,
-          "first_appearance": 59.225833333333334,
-          "last_appearance": 59.225833333333334
-        },
-        "Ford": {
-          "frames_detected": 1,
-          "time_seconds": 0.16683333333333333,
-          "percentage": 0.26191723415400736,
-          "avg_confidence": 0.7770073413848877,
-          "first_appearance": 60.727333333333334,
-          "last_appearance": 60.727333333333334
+          "avg_confidence": 0.775702714920044,
+          "first_appearance": 61.89516666666667,
+          "last_appearance": 61.89516666666667
         }
       }
     },
@@ -169,92 +153,92 @@
       "fps": 29.97,
       "brands_detected": {
         "Ferrari": {
-          "frames_detected": 22,
-          "time_seconds": 3.6703370036703373,
-          "percentage": 5.762179151388161,
-          "avg_confidence": 0.4151456098664891,
-          "first_appearance": 2.6693360026693362,
-          "last_appearance": 48.21488154821488
+          "frames_detected": 33,
+          "time_seconds": 5.505505505505505,
+          "percentage": 8.64326872708224,
+          "avg_confidence": 0.8111901680628458,
+          "first_appearance": 0.8341675008341676,
+          "last_appearance": 7.007007007007007
         },
-        "Vodafone": {
-          "frames_detected": 3,
-          "time_seconds": 0.5005005005005005,
-          "percentage": 0.7857517024620221,
-          "avg_confidence": 0.3650519748528798,
-          "first_appearance": 13.513513513513514,
-          "last_appearance": 33.70036703370037
-        },
-        "Nbc": {
+        "Fedex": {
           "frames_detected": 1,
           "time_seconds": 0.16683350016683351,
           "percentage": 0.26191723415400736,
-          "avg_confidence": 0.2615661025047302,
-          "first_appearance": 14.014014014014014,
-          "last_appearance": 14.014014014014014
-        },
-        "Apple": {
-          "frames_detected": 3,
-          "time_seconds": 0.5005005005005005,
-          "percentage": 0.7857517024620221,
-          "avg_confidence": 0.28309014439582825,
-          "first_appearance": 16.016016016016017,
-          "last_appearance": 32.8661995328662
-        },
-        "Cocacola": {
-          "frames_detected": 29,
-          "time_seconds": 4.838171504838171,
-          "percentage": 7.595599790466212,
-          "avg_confidence": 0.9497474699184812,
-          "first_appearance": 19.51951951951952,
-          "last_appearance": 24.357691024357692
+          "avg_confidence": 0.4919087886810303,
+          "first_appearance": 12.84617951284618,
+          "last_appearance": 12.84617951284618
         },
         "Nike": {
-          "frames_detected": 2,
-          "time_seconds": 0.33366700033366703,
-          "percentage": 0.5238344683080147,
-          "avg_confidence": 0.45197509229183197,
-          "first_appearance": 25.358692025358692,
-          "last_appearance": 55.72238905572239
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.35136228799819946,
+          "first_appearance": 16.18284951618285,
+          "last_appearance": 16.18284951618285
+        },
+        "Cocacola": {
+          "frames_detected": 31,
+          "time_seconds": 5.171838505171839,
+          "percentage": 8.119434258774227,
+          "avg_confidence": 0.7732765520772626,
+          "first_appearance": 16.516516516516518,
+          "last_appearance": 24.357691024357692
         },
         "Pepsi": {
           "frames_detected": 1,
           "time_seconds": 0.16683350016683351,
           "percentage": 0.26191723415400736,
-          "avg_confidence": 0.8832492828369141,
+          "avg_confidence": 0.7386336922645569,
           "first_appearance": 34.034034034034036,
           "last_appearance": 34.034034034034036
         },
-        "Adidas": {
-          "frames_detected": 1,
-          "time_seconds": 0.16683350016683351,
-          "percentage": 0.26191723415400736,
-          "avg_confidence": 0.3022993803024292,
-          "first_appearance": 40.04004004004004,
-          "last_appearance": 40.04004004004004
+        "Heineken": {
+          "frames_detected": 13,
+          "time_seconds": 2.1688355021688355,
+          "percentage": 3.404924044002095,
+          "avg_confidence": 0.7959197622079116,
+          "first_appearance": 37.20387053720387,
+          "last_appearance": 44.71137804471138
         },
-        "Google": {
-          "frames_detected": 1,
-          "time_seconds": 0.16683350016683351,
-          "percentage": 0.26191723415400736,
-          "avg_confidence": 0.29976484179496765,
-          "first_appearance": 43.54354354354354,
-          "last_appearance": 43.54354354354354
+        "Sprite": {
+          "frames_detected": 29,
+          "time_seconds": 4.838171504838171,
+          "percentage": 7.595599790466212,
+          "avg_confidence": 0.6261638413215506,
+          "first_appearance": 43.37671004337671,
+          "last_appearance": 61.7283950617284
         },
-        "McDonalds": {
+        "Apple": {
           "frames_detected": 3,
           "time_seconds": 0.5005005005005005,
           "percentage": 0.7857517024620221,
-          "avg_confidence": 0.6580462058385214,
-          "first_appearance": 47.54754754754755,
-          "last_appearance": 55.22188855522189
+          "avg_confidence": 0.44292424122492474,
+          "first_appearance": 45.71237904571238,
+          "last_appearance": 56.55655655655656
         },
-        "Ford": {
+        "McDonalds": {
+          "frames_detected": 2,
+          "time_seconds": 0.33366700033366703,
+          "percentage": 0.5238344683080147,
+          "avg_confidence": 0.6268428862094879,
+          "first_appearance": 47.54754754754755,
+          "last_appearance": 47.71438104771438
+        },
+        "Citroen": {
           "frames_detected": 1,
           "time_seconds": 0.16683350016683351,
           "percentage": 0.26191723415400736,
-          "avg_confidence": 0.7736250758171082,
-          "first_appearance": 60.7273940607274,
-          "last_appearance": 60.7273940607274
+          "avg_confidence": 0.5967013239860535,
+          "first_appearance": 55.22188855522189,
+          "last_appearance": 55.22188855522189
+        },
+        "Nbc": {
+          "frames_detected": 1,
+          "time_seconds": 0.16683350016683351,
+          "percentage": 0.26191723415400736,
+          "avg_confidence": 0.6071280241012573,
+          "first_appearance": 61.89522856189523,
+          "last_appearance": 61.89522856189523
         }
       }
     }
@@ -263,20 +247,18 @@
     "total_images_tested": 8,
     "total_videos_tested": 2,
     "brands_detected": [
-      "Mini",
-      "Google",
-      "Vodafone",
-      "Cocacola",
-      "Apple",
-      "Pepsi",
-      "Ferrari",
-      "Adidas",
-      "Puma",
       "McDonalds",
-      "Ford",
+      "Cocacola",
+      "Heineken",
+      "Citroen",
+      "Nbc",
+      "Fedex",
+      "Ferrari",
+      "Apple",
       "Nike",
-      "Nbc"
+      "Sprite",
+      "Pepsi"
     ],
-    "average_confidence": 0.5158419414356336
+    "average_confidence": 0.6150139026056874
   }
 }
