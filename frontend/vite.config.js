@@ -8,5 +8,18 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: false,
+    middlewareMode: false,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    }
+  },
+  build: {
+    minify: false,
+    target: 'es2020'
+  },
+  optimizeDeps: {
+    disabled: false
   }
 })

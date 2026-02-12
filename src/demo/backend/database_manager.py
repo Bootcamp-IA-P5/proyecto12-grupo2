@@ -37,20 +37,18 @@ Dependencies:
     - Logger: Structured logging from common module
 """
 
+from backend.models import Base, Video, Detection
+import urllib.parse
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from common.log_setup import log_setup
+from common.logger import Logger
+from settings import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT
 import sys
 from pathlib import Path
 
 # Add parent directory to Python path to enable imports from sibling packages
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from settings import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT
-from common.logger import Logger
-from common.log_setup import log_setup
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-import urllib.parse
-from backend.models import Base, Video, Detection
 
 
 log_setup()
@@ -59,27 +57,27 @@ log_setup()
 class DatabaseManager(Logger):
     """
     SQLAlchemy-based database manager for video analysis storage and retrieval.
-    
+
     This class manages PostgreSQL connections using a connection pool, creates database
     tables, and provides CRUD operations for analysis records. Each method uses explicit
     session handling with try/finally blocks to ensure resources are properly released.
-    
+
     Attributes:
         engine (Engine): SQLAlchemy engine with connection pooling
         Session (sessionmaker): Factory for creating new database sessions
     """
-    
+
     def __init__(self, min_conn=1, max_conn=10):
         """
         Initialize database manager and create connection pool.
-        
+
         Constructs the PostgreSQL connection string from settings, creates the SQLAlchemy
         engine with connection pooling, and initializes database tables if they don't exist.
-        
+
         Args:
             min_conn (int): Minimum number of connections to maintain in pool (default 1)
             max_conn (int): Maximum number of connections allowed in pool (default 10)
-        
+
         Raises:
             Exception: If database connection or table creation fails
         """
@@ -97,16 +95,14 @@ class DatabaseManager(Logger):
                 db_url,
                 pool_size=min_conn,
                 max_overflow=max_conn - min_conn,
-                pool_pre_ping=True
+                pool_pre_ping=True,
             )
-
-            # Create session factory for creating new database sessions
-            self.Session = sessionmaker(bind=self.engine)
 
             # Create tables from SQLAlchemy models if they don't exist
             Base.metadata.create_all(self.engine)
-            
-            self.log.debug("SQLAlchemy Engine and SessionPool created successfully")
+
+            self.log.debug(
+                "SQLAlchemy Engine and SessionPool created successfully")
 
         except Exception as e:
             self.log.error(f"Error initializing DatabaseManager: {e}")
@@ -115,7 +111,7 @@ class DatabaseManager(Logger):
     def get_session(self):
         """
         Acquire a new database session from the connection pool.
-        
+
         Returns:
             Session: New SQLAlchemy session connected to the database
         """
@@ -125,21 +121,21 @@ class DatabaseManager(Logger):
     def release_session(self, session):
         """
         Release and close a database session, returning connection to pool.
-        
+
         Args:
             session (Session): SQLAlchemy session to close
         """
         self.log.debug("Releasing database session")
-        session.close() 
+        session.close()
 
     def create_analysis(self, analysis_record):
         """
         Create and persist a new video analysis record with brand detections.
-        
+
         This method stores both the video metadata and individual brand detections
         from the analysis. It creates a Video record with the UUID and then creates
         Detection records for each brand found in each frame.
-        
+
         Args:
             analysis_record (dict): Analysis data with keys:
                 - video_id (str): Unique UUID for this analysis
@@ -150,14 +146,15 @@ class DatabaseManager(Logger):
                 - brands (dict): {brand_name: count} of detections
                 - frames_data (list): Frame-by-frame analysis results
                     - Each frame contains 'timestamp', 'brands' dict with confidence scores
-        
+
         Raises:
             Exception: On database errors (logged and re-raised)
         """
         session = self.get_session()
         try:
-            self.log.debug(f"Creating analysis for video_id: {analysis_record['video_id']}")
-            
+            self.log.debug(
+                f"Creating analysis for video_id: {analysis_record['video_id']}")
+
             # Create Video record with UUID (used for API lookups and retrieval)
             video = Video(
                 video_uuid=analysis_record['video_id'],
@@ -165,18 +162,19 @@ class DatabaseManager(Logger):
             )
             session.add(video)
             session.flush()  # Execute INSERT to get auto-generated video.id
-            
+
             # Create Detection records for each brand detected in each frame
             if 'frames_data' in analysis_record:
                 for frame in analysis_record['frames_data']:
                     timestamp = frame.get('timestamp', 0)
                     brands_this_frame = frame.get('brands', {})
-                    
+
                     # Store detection for each brand in this frame
                     for brand_name, confidences in brands_this_frame.items():
                         # Calculate average confidence if multiple detections of same brand in frame
-                        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
-                        
+                        avg_confidence = sum(
+                            confidences) / len(confidences) if confidences else 0.0
+
                         detection = Detection(
                             video_id=video.id,  # Foreign key to video
                             brand_name=brand_name,
@@ -186,11 +184,12 @@ class DatabaseManager(Logger):
                             exposure_percentage=0.0  # Could calculate if needed
                         )
                         session.add(detection)
-            
+
             # Commit all changes (Video and Detection records) as atomic transaction
             session.commit()
-            self.log.debug(f"Analysis created successfully: {analysis_record['video_id']}")
-            
+            self.log.debug(
+                f"Analysis created successfully: {analysis_record['video_id']}")
+
         except Exception as e:
             # Rollback entire transaction if any error occurs
             session.rollback()
@@ -202,15 +201,15 @@ class DatabaseManager(Logger):
     def read_analysis(self, video_id):
         """
         Retrieve stored analysis results for a video by various lookup methods.
-        
+
         This method supports three lookup strategies in order of preference:
         1. UUID lookup (primary): Matches video_uuid column (most reliable)
         2. Numeric ID lookup: Tries to convert input to integer and match id
         3. Name lookup: Fallback to match by video title/filename
-        
+
         Args:
             video_id (str): Identifier to search for (UUID string, numeric ID, or video name)
-        
+
         Returns:
             dict or None: Analysis results with keys:
                 - video_id (str): UUID of the video
@@ -221,17 +220,18 @@ class DatabaseManager(Logger):
                     - confidence (float): Detection confidence (0-1)
                     - timestamp_sec (int): Position in video where detected
             Returns None if video not found in database
-        
+
         Raises:
             Logs errors but returns None instead of raising (safe for API responses)
         """
         session = self.get_session()
         try:
             self.log.debug(f"Reading analysis for video_id: {video_id}")
-            
+
             # Try to find by UUID first (primary lookup method)
-            record = session.query(Video).filter_by(video_uuid=video_id).first()
-            
+            record = session.query(Video).filter_by(
+                video_uuid=video_id).first()
+
             # If not found by UUID, try by numeric ID (fallback 1)
             if not record:
                 try:
@@ -239,19 +239,20 @@ class DatabaseManager(Logger):
                     record = session.query(Video).filter_by(id=vid).first()
                 except ValueError:
                     pass  # Not a valid integer, continue to next lookup
-            
+
             # If still not found, try by name (fallback 2)
             if not record:
                 record = session.query(Video).filter_by(name=video_id).first()
-            
+
             # Return None if no matching video found
             if not record:
                 self.log.warning(f"Video not found: {video_id}")
                 return None
-            
+
             # Query all Detection records associated with this video
-            detections = session.query(Detection).filter_by(video_id=record.id).all()
-            
+            detections = session.query(Detection).filter_by(
+                video_id=record.id).all()
+
             # Build result dictionary with video metadata and detections
             result = {
                 "video_id": record.video_uuid,
@@ -267,7 +268,7 @@ class DatabaseManager(Logger):
                 ]
             }
             return result
-            
+
         except Exception as e:
             self.log.error(f"Error reading analysis: {e}")
             return None
@@ -277,35 +278,36 @@ class DatabaseManager(Logger):
     def delete_analysis(self, video_id):
         """
         Delete analysis results for a video from the database.
-        
+
         This method removes both the Video record and all associated Detection records
         using the same flexible lookup strategy as read_analysis():
         1. UUID lookup (primary)
         2. Numeric ID lookup
         3. Name lookup
-        
+
         Cascading Delete:
             Deletes all Detection records linked to the video via video_id foreign key
             before deleting the Video record itself, maintaining referential integrity.
-        
+
         Args:
             video_id (str): Identifier to search for (UUID string, numeric ID, or video name)
-        
+
         Logs:
             - Debug: Successfully deleted analysis record
             - Warning: Video not found for deletion
             - Error: Database errors (retries via exception re-raise)
-        
+
         Raises:
             Exception: On database errors after rollback
         """
         session = self.get_session()
         try:
             self.log.debug(f"Deleting analysis for video_id: {video_id}")
-            
+
             # Try to find by UUID first (primary lookup method)
-            record = session.query(Video).filter_by(video_uuid=video_id).first()
-            
+            record = session.query(Video).filter_by(
+                video_uuid=video_id).first()
+
             # If not found by UUID, try by numeric ID (fallback 1)
             if not record:
                 try:
@@ -313,11 +315,11 @@ class DatabaseManager(Logger):
                     record = session.query(Video).filter_by(id=vid).first()
                 except ValueError:
                     pass  # Not a valid integer, continue to next lookup
-            
+
             # If still not found, try by name (fallback 2)
             if not record:
                 record = session.query(Video).filter_by(name=video_id).first()
-            
+
             # If video found, delete it and its associated detections
             if record:
                 # Cascading delete: remove all detections for this video first
@@ -328,7 +330,7 @@ class DatabaseManager(Logger):
                 self.log.debug(f"Analysis deleted: {video_id}")
             else:
                 self.log.warning(f"Video not found for deletion: {video_id}")
-                
+
         except Exception as e:
             # Rollback transaction if any error occurs
             session.rollback()
